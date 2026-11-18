@@ -186,15 +186,22 @@ module.exports = async function handler(req, res) {
     const shortlist = [CONFIGURED, ALIAS, 'gemini-2.5-flash', 'gemini-3.8-flash']
       .filter((m, i, arr) => m && arr.indexOf(m) === i);
 
+    let lastFail = null;
     for (const m of shortlist) {
       if (tried.indexOf(m) >= 0) continue;
       tried.push(m);
-      const r = await callGemini(m, key, b64);
-      if (r.status !== 404) { upstream = r; usedModel = m; break; }
+      let r = await callGemini(m, key, b64);
+      if (r.status === 503 || r.status === 429) {
+        // "high demand" is usually a spike, not a wall: one short retry
+        await new Promise((ok) => setTimeout(ok, 700));
+        r = await callGemini(m, key, b64);
+      }
+      if (r.status !== 404 && r.status !== 503) { upstream = r; usedModel = m; break; }
+      lastFail = r;
     }
 
     if (!upstream) {
-      // every name we know is gone: ask the API what it actually offers now
+      // every name we know is gone or busy: ask the API what it actually offers
       const available = await listModels(key);
       const ranked = rankModels(available).slice(0, 3);
       for (const pick of ranked) {
@@ -205,6 +212,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    if (!upstream && lastFail) upstream = lastFail;
     if (upstream && upstream.ok) cachedModel = usedModel;
   }
 
