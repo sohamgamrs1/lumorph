@@ -126,8 +126,9 @@
     const ipdRatio = ipd / faceW;
     // midface = eye line to upper lip, the standard definition. The nasion gave
     // the lower midface only, which roughly doubled the ratio.
+    const eyeLineX = (P.eyeOutR.x + P.eyeInR.x + P.eyeInL.x + P.eyeOutL.x) / 4;
     const eyeLineY = (P.eyeOutR.y + P.eyeInR.y + P.eyeInL.y + P.eyeOutL.y) / 4;
-    const midfaceRatio = ipd / (Math.abs(vertical(P.subnasale) - vertical({ y: eyeLineY })) || 1);
+    const midfaceRatio = ipd / (Math.abs(vertical(P.subnasale) - vertical({ x: eyeLineX, y: eyeLineY })) || 1);
 
     /* 5. eyes */
     const tiltR = deg(Math.atan2(-(P.eyeOutR.y - P.eyeInR.y), Math.abs(P.eyeOutR.x - P.eyeInR.x)));
@@ -170,7 +171,7 @@
       symmetry, thirdsDev, fifthsDev, ipdRatio, midfaceRatio, canthalTilt,
       eyeAspect, noseToEyeGap, philtrumChin, lipToNose, vermilionRatio,
       lipFullness, jawCheek, gonialAngle, jawWidth, browHeight, midfaceWidth,
-      thirds, _geo: { faceW, faceH, ipd, eyeMid: g.eyeMid }
+      _geo: { faceW, faceH, ipd, eyeMid: g.eyeMid }
     };
   }
 

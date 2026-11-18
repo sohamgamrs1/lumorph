@@ -752,7 +752,7 @@
             h('span', { style: { fontSize: '13.5px', fontWeight: '600' } }, 'Where your photo goes')),
           h('p', { class: 'small' }, 'Nowhere. The scan runs in this browser tab, the measurements never leave the device, and the photo is kept in this browser\u2019s own storage so you can see your history. No upload, no account, no third party.'))
       );
-      foot.append(nextBtn(T('Take my first scan'), advance, I.camera));
+      foot.append(nextBtn('Step into Lumorph', advance, I.sparkle));
     }
 
     view.append(wrap);
@@ -1181,7 +1181,7 @@
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
         h('div', { class: 'row between', style: { paddingTop: '6px', marginBottom: '12px' } },
-          h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => go(lastScan() ? 'home' : 'onboarding') },
+          h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => go(S.onboarded ? 'home' : 'onboarding') },
             h('span', { html: I.close, style: { display: 'grid', width: '18px', height: '18px' } })),
           h('button', { class: 'btn small ghost', onclick: () => fileInput.click() },
             h('span', { html: I.upload, style: { width: '16px', height: '16px', display: 'grid' } }), T('Upload')))),
@@ -1276,8 +1276,17 @@
         cam.active = true;
         video.srcObject = stream;
         await video.play();
+        hint.textContent = 'Loading the face model\u2026';
+        stepPill.style.opacity = '0.6';
+        let lm = null;
+        try {
+          lm = await ensureLandmarker();
+        } catch (e) {
+          hint.textContent = 'The face model could not load \u2014 use Upload instead';
+          return;
+        }
+        stepPill.style.opacity = '1';
         hint.textContent = 'Line your face up with the oval';
-        const lm = await ensureLandmarker();
         const tick = () => {
           if (!cam.active) return;
           const now = performance.now();
@@ -3213,6 +3222,12 @@
   notifSettings();
   scheduleReminders();
   setTimeout(fireIfDue, 1200);
+
+  /* warm the face model in the background: on a cold visit it is a ~3MB
+     download, and waiting for it after tapping Scan felt like nothing happening */
+  if (S.onboarded && navigator.onLine !== false) {
+    setTimeout(() => { ensureLandmarker().catch(() => {}); }, 2500);
+  }
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {

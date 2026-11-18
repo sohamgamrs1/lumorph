@@ -1986,8 +1986,9 @@ setTimeout(function () {
     const ipdRatio = ipd / faceW;
     // midface = eye line to upper lip, the standard definition. The nasion gave
     // the lower midface only, which roughly doubled the ratio.
+    const eyeLineX = (P.eyeOutR.x + P.eyeInR.x + P.eyeInL.x + P.eyeOutL.x) / 4;
     const eyeLineY = (P.eyeOutR.y + P.eyeInR.y + P.eyeInL.y + P.eyeOutL.y) / 4;
-    const midfaceRatio = ipd / (Math.abs(vertical(P.subnasale) - vertical({ y: eyeLineY })) || 1);
+    const midfaceRatio = ipd / (Math.abs(vertical(P.subnasale) - vertical({ x: eyeLineX, y: eyeLineY })) || 1);
 
     /* 5. eyes */
     const tiltR = deg(Math.atan2(-(P.eyeOutR.y - P.eyeInR.y), Math.abs(P.eyeOutR.x - P.eyeInR.x)));
@@ -2030,7 +2031,7 @@ setTimeout(function () {
       symmetry, thirdsDev, fifthsDev, ipdRatio, midfaceRatio, canthalTilt,
       eyeAspect, noseToEyeGap, philtrumChin, lipToNose, vermilionRatio,
       lipFullness, jawCheek, gonialAngle, jawWidth, browHeight, midfaceWidth,
-      thirds, _geo: { faceW, faceH, ipd, eyeMid: g.eyeMid }
+      _geo: { faceW, faceH, ipd, eyeMid: g.eyeMid }
     };
   }
 
@@ -3362,7 +3363,7 @@ setTimeout(function () {
             h('span', { style: { fontSize: '13.5px', fontWeight: '600' } }, 'Where your photo goes')),
           h('p', { class: 'small' }, 'Nowhere. The scan runs in this browser tab, the measurements never leave the device, and the photo is kept in this browser\u2019s own storage so you can see your history. No upload, no account, no third party.'))
       );
-      foot.append(nextBtn(T('Take my first scan'), advance, I.camera));
+      foot.append(nextBtn('Step into Lumorph', advance, I.sparkle));
     }
 
     view.append(wrap);
@@ -3791,7 +3792,7 @@ setTimeout(function () {
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
         h('div', { class: 'row between', style: { paddingTop: '6px', marginBottom: '12px' } },
-          h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => go(lastScan() ? 'home' : 'onboarding') },
+          h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => go(S.onboarded ? 'home' : 'onboarding') },
             h('span', { html: I.close, style: { display: 'grid', width: '18px', height: '18px' } })),
           h('button', { class: 'btn small ghost', onclick: () => fileInput.click() },
             h('span', { html: I.upload, style: { width: '16px', height: '16px', display: 'grid' } }), T('Upload')))),
@@ -3886,8 +3887,17 @@ setTimeout(function () {
         cam.active = true;
         video.srcObject = stream;
         await video.play();
+        hint.textContent = 'Loading the face model\u2026';
+        stepPill.style.opacity = '0.6';
+        let lm = null;
+        try {
+          lm = await ensureLandmarker();
+        } catch (e) {
+          hint.textContent = 'The face model could not load \u2014 use Upload instead';
+          return;
+        }
+        stepPill.style.opacity = '1';
         hint.textContent = 'Line your face up with the oval';
-        const lm = await ensureLandmarker();
         const tick = () => {
           if (!cam.active) return;
           const now = performance.now();
@@ -5823,6 +5833,12 @@ setTimeout(function () {
   notifSettings();
   scheduleReminders();
   setTimeout(fireIfDue, 1200);
+
+  /* warm the face model in the background: on a cold visit it is a ~3MB
+     download, and waiting for it after tapping Scan felt like nothing happening */
+  if (S.onboarded && navigator.onLine !== false) {
+    setTimeout(() => { ensureLandmarker().catch(() => {}); }, 2500);
+  }
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
