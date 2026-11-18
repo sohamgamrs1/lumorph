@@ -72,7 +72,19 @@
     download: SVG('<path d="M12 3.8v11.4"/><path d="M7.7 11 12 15.3 16.3 11"/><path d="M4.2 20h15.6"/>'),
     trash: SVG('<path d="M4.6 6.8h14.8"/><path d="M9.4 6.8V4.5h5.2v2.3"/><path d="M6.7 6.8l.9 12.3a1.9 1.9 0 0 0 1.9 1.7h5a1.9 1.9 0 0 0 1.9-1.7l.9-12.3"/><path d="M10.4 10.6v6.3"/><path d="M13.6 10.6v6.3"/>'),
     info: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 11.3v5.1"/><circle cx="12" cy="7.9" r="1" fill="currentColor" stroke="none"/>'),
-    bolt: SVG('<path d="M13.4 2.6 5.2 13.4h5.6l-.9 8 8.2-10.8h-5.6z"/>', true)
+    bolt: SVG('<path d="M13.4 2.6 5.2 13.4h5.6l-.9 8 8.2-10.8h-5.6z"/>', true),
+    bell: SVG('<path d="M12 3.6a5.6 5.6 0 0 0-5.6 5.6c0 4.2-1.3 5.7-2 6.3h15.2c-.7-.6-2-2.1-2-6.3A5.6 5.6 0 0 0 12 3.6z"/><path d="M9.7 19a2.5 2.5 0 0 0 4.6 0"/>'),
+    external: SVG('<path d="M14 4.5h5.5V10"/><path d="M19.4 4.6 11 13"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>'),
+    sigma: SVG('<path d="M17.5 5.5H7l5.5 6.5L7 18.5h10.5"/>'),
+    doc: SVG('<path d="M6.6 3.8h6.6l4.4 4.4v12H6.6z"/><path d="M13.2 3.8v4.4h4.4"/><path d="M9.4 12.2h5.2"/><path d="M9.4 15.6h5.2"/>'),
+    terms: SVG('<path d="M4 6.6h9.5"/><path d="M4 11.6h6.5"/><path d="M4 16.6h4.5"/><path d="M14.2 15.4l2.1 2.1 4.1-4.6"/>'),
+    person: SVG('<circle cx="12" cy="8.1" r="3.3"/><path d="M5.4 20c.7-3.4 3.3-5.4 6.6-5.4s5.9 2 6.6 5.4"/>'),
+    gift: SVG('<rect x="3.8" y="9.4" width="16.4" height="3.6" rx="1"/><path d="M5.6 13v7.4h12.8V13"/><path d="M12 9.4v11"/><path d="M12 9.4C10.4 5.8 8.9 5.2 7.7 6c-1.4.8-1 3.4 4.3 3.4z"/><path d="M12 9.4c1.6-3.6 3.1-4.2 4.3-3.4 1.4.8 1 3.4-4.3 3.4z"/>'),
+    braces: SVG('<path d="M9.2 4.4H7.6A1.6 1.6 0 0 0 6 6v3.1c0 1-.6 1.9-1.6 2.2v1.4c1 .3 1.6 1.2 1.6 2.2V18a1.6 1.6 0 0 0 1.6 1.6h1.6"/><path d="M14.8 4.4h1.6A1.6 1.6 0 0 1 18 6v3.1c0 1 .6 1.9 1.6 2.2v1.4c-1 .3-1.6 1.2-1.6 2.2V18a1.6 1.6 0 0 1-1.6 1.6h-1.6"/>'),
+    table: SVG('<rect x="3.6" y="5" width="16.8" height="14" rx="2.2"/><path d="M3.6 10h16.8"/><path d="M9.6 10v9"/>'),
+    image: SVG('<rect x="3.6" y="5.2" width="16.8" height="13.6" rx="2.4"/><circle cx="8.7" cy="10" r="1.3"/><path d="M4.6 17.2l4.5-4.3 3.2 2.8 3-2.5 4.1 3.6"/>'),
+    flip: SVG('<path d="M12 3.6v16.8"/><path d="M9.2 6.6 4.6 12l4.6 5.4z"/><path d="M14.8 6.6 19.4 12l-4.6 5.4z"/>'),
+    clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>')
   };
 
   /* ---------------- store ---------------- */
@@ -1136,11 +1148,16 @@
       }
       if (!cam.lm || !cam.stream) { toast('No face detected yet'); return; }
       const vw = video.videoWidth, vh = video.videoHeight;
+      const flipped = (S.settings.mirror === 'flipped');
       const cv = document.createElement('canvas');
       cv.width = vw; cv.height = vh;
       const ctx = cv.getContext('2d');
+      if (flipped) { ctx.translate(vw, 0); ctx.scale(-1, 1); }
       ctx.drawImage(video, 0, 0, vw, vh);
-      processScan(cv, cam.lm, vw, vh);
+      const pts = flipped
+        ? cam.lm.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z }))
+        : cam.lm;
+      processScan(cv, pts, vw, vh);
     }
 
     fileInput.addEventListener('change', async (e) => {
@@ -1537,61 +1554,346 @@
   }
 
   /* ---------- settings ---------- */
+  function notifPerm() {
+    return ('Notification' in window) ? Notification.permission : 'unsupported';
+  }
+  function notifSettings() {
+    S.settings = S.settings || {};
+    if (!S.settings.notif) {
+      S.settings.notif = { enabled: false, daily: true, time: '20:00', streak: true, weekly: true, lastFired: '' };
+    }
+    return S.settings.notif;
+  }
+
+  async function askNotifications() {
+    if (!('Notification' in window)) { toast('This browser cannot show notifications'); return; }
+    if (Notification.permission === 'granted') { notifSettings().enabled = true; save(); go('settings'); return; }
+    if (Notification.permission === 'denied') {
+      toast('Blocked in browser settings \u2014 re-enable it there');
+      return;
+    }
+    try {
+      const p = await Notification.requestPermission();
+      if (p === 'granted') {
+        notifSettings().enabled = true;
+        save();
+        toast('Reminders on');
+        try {
+          new Notification('Lumorph', { body: 'Reminders are on. We will nudge you once a day.', icon: './icons/icon-192.png' });
+        } catch (e) { /* some browsers need a service worker */ }
+        scheduleReminders();
+        registerPeriodicSync();
+      } else {
+        toast('Notifications stayed off');
+      }
+      go('settings');
+    } catch (e) { toast('Could not ask for permission'); }
+  }
+
+  let notifTimer = null;
+  function scheduleReminders() {
+    clearTimeout(notifTimer);
+    notifTimer = null;
+    const n = notifSettings();
+    if (!n.enabled || notifPerm() !== 'granted') return;
+    const parts = (n.time || '20:00').split(':');
+    const hh = Number(parts[0]) || 20, mm = Number(parts[1]) || 0;
+    const now = new Date();
+    const next = new Date();
+    next.setHours(hh, mm, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const delay = Math.min(next - now, 2147483000);
+    notifTimer = setTimeout(fireReminder, delay);
+  }
+
+  function fireReminder() {
+    const n = notifSettings();
+    if (!n.enabled || notifPerm() !== 'granted') return;
+    const key = todayKey();
+    if (n.lastFired === key) { scheduleReminders(); return; }
+    const q = dayQuests();
+    const done = QUESTS.filter((x) => q[x.id]).length;
+    if (done < 6) {
+      const left = 6 - done;
+      const body = done === 0
+        ? 'No quests cleared today. Two minutes keeps the streak alive.'
+        : left + ' quest' + (left === 1 ? '' : 's') + ' left today.';
+      try {
+        new Notification('Lumorph', { body, icon: './icons/icon-192.png', tag: 'lumorph-daily' });
+      } catch (e) { /* ignore */ }
+    }
+    n.lastFired = key;
+    save();
+    scheduleReminders();
+  }
+
+  function registerPeriodicSync() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready.then((reg) => {
+      if (!('periodicSync' in reg)) return;
+      reg.periodicSync.register('lumorph-daily', { minInterval: 24 * 60 * 60 * 1000 }).catch(() => {});
+    }).catch(() => {});
+  }
+
+  function tileSeg(options, value, onPick) {
+    const wrap = h('div', { class: 'tiles' });
+    options.forEach((o) => {
+      wrap.append(h('button', {
+        'aria-pressed': String(value === o.id),
+        dataset: { id: o.id },
+        onclick: () => {
+          wrap.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === o.id)));
+          onPick(o.id);
+        }
+      }, h('span', { html: o.icon, style: { display: 'grid' } }), o.label));
+    });
+    return wrap;
+  }
+
+  function growRow(cfg) {
+    const kids = [
+      cfg.icon ? h('span', { class: 'tile', html: cfg.icon, style: { display: 'grid' } }) : null,
+      h('div', { class: 'grow' },
+        h('div', { class: 'tt' }, cfg.title),
+        cfg.sub ? h('div', { class: 'ts' }, cfg.sub) : null),
+    ];
+    if (cfg.right) kids.push(cfg.right);
+    else if (cfg.tick) kids.push(h('span', { class: 'ok-tick' }, h('span', { html: I.check, style: { display: 'grid' } })));
+    else if (cfg.chev) kids.push(h('span', { class: 'rt', html: I.chev }));
+    else if (cfg.ext) kids.push(h('span', { class: 'rt', html: I.external }));
+    else if (cfg.down) kids.push(h('span', { class: 'rt', html: I.download }));
+
+    const el = h(cfg.onClick ? 'button' : 'div', {
+      class: 'grow-row' + (cfg.danger ? ' danger' : '') + (cfg.onClick ? '' : ' static'),
+      onclick: cfg.onClick || null
+    }, kids);
+    return el;
+  }
+
+  function switchEl(on, onChange) {
+    const el = h('button', { class: 'switch', role: 'switch', 'aria-checked': String(!!on) },
+      h('span', {}));
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const next = el.getAttribute('aria-checked') !== 'true';
+      el.setAttribute('aria-checked', String(next));
+      onChange(next);
+    });
+    return el;
+  }
+
   ROUTES.settings = function (root) {
-    const themes = [['dark', 'Dark', I.moon], ['light', 'Light', I.sun], ['system', 'System', I.gear]];
+    const n = notifSettings();
+    const perm = notifPerm();
+    const consent = S.consent && S.consent.at
+      ? new Date(S.consent.at).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : 'Not recorded';
+
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
-        h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '14px' } },
+        h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '16px' } },
           h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('profile') },
             h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } }))),
         h('p', { class: 'eyebrow' }, 'Lumorph'),
-        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'Settings & ', h('em', {}, 'privacy'))),
+        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'Settings & ', h('em', {}, 'Privacy'))),
 
-      h('p', { class: 'eyebrow mt-28 rise', style: { '--i': 1 } }, 'Appearance'),
-      h('div', { class: 'card mt-12 rise', style: { '--i': 2 } },
-        h('div', { class: 'segmented no-thumb' }, themes.map(([id, label, icon]) =>
-          h('button', {
-            'aria-selected': String(S.theme === id),
-            onclick: () => { S.theme = id; save(); applyTheme(); go('settings'); }
-          }, label)))),
+      /* appearance */
+      h('p', { class: 'sect rise', style: { '--i': 1 } }, 'Appearance'),
+      h('div', { class: 'rise', style: { '--i': 2 } },
+        tileSeg([
+          { id: 'dark', label: 'Dark', icon: I.moon },
+          { id: 'light', label: 'Light', icon: I.sun },
+          { id: 'system', label: 'System', icon: I.gear }
+        ], S.theme, (id) => { S.theme = id; save(); applyTheme(); })),
 
-      h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 3 } }, 'Data & account'),
-      h('div', { class: 'card mt-12 rise', style: { '--i': 4 } },
-        linkRow('Export everything as JSON', 'Every scan, measurement and quest', I.download, exportData),
-        linkRow('Delete all data', 'Wipes this browser clean', I.trash, confirmWipe)),
+      /* selfie photos */
+      h('p', { class: 'sect rise', style: { '--i': 3 } }, 'Selfie photos'),
+      h('div', { class: 'rise', style: { '--i': 4 } },
+        tileSeg([
+          { id: 'auto', label: 'Automatic', icon: I.sparkle },
+          { id: 'flipped', label: 'Flipped', icon: I.flip },
+          { id: 'as-is', label: 'As saved', icon: I.image }
+        ], (S.settings.mirror || 'auto'), (id) => { S.settings.mirror = id; save(); toast(id === 'flipped' ? 'Camera photos will be flipped' : id === 'as-is' ? 'Photos saved exactly as captured' : 'Handled automatically'); })),
+      h('p', { class: 'helper rise', style: { '--i': 5 } },
+        'If a photo from your camera looks reversed next to the live preview, choose Flipped. Photos you upload are never changed.'),
 
-      h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 5 } }, 'About'),
-      h('div', { class: 'card mt-12 rise', style: { '--i': 6 } },
-        linkRow('How scores work', 'The rubric and its limits', I.info, () => go('how')),
-        linkRow('Privacy', 'What is stored and where', I.shield, () => openSheet(privacySheet()))),
-      h('p', { class: 'tiny center mt-20 rise', style: { '--i': 7 } }, 'Lumorph v1 \u00b7 free, offline, no accounts')
+      /* notifications */
+      h('p', { class: 'sect rise', style: { '--i': 6 } }, 'Notifications'),
+      perm === 'granted'
+        ? h('div', { class: 'group rise', style: { '--i': 7 } },
+            growRow({
+              icon: I.bell, title: 'Daily reminder',
+              sub: 'One nudge a day, only if quests are left.',
+              right: switchEl(n.enabled, (v) => { n.enabled = v; save(); scheduleReminders(); if (v) fireIfDue(); })
+            }),
+            n.enabled ? growRow({
+              icon: I.clock, title: 'Reminder time',
+              right: h('input', {
+                type: 'time', class: 'input', value: n.time || '20:00',
+                style: { width: '110px', height: '40px', padding: '0 10px', fontSize: '14px', marginLeft: 'auto' },
+                onchange: (e) => { n.time = e.target.value || '20:00'; save(); scheduleReminders(); }
+              })
+            }) : null,
+            growRow({
+              icon: I.bolt, title: 'Streak warning',
+              sub: 'A second nudge late evening if the streak is at risk.',
+              right: switchEl(n.streak, (v) => { n.streak = v; save(); })
+            }),
+            growRow({
+              icon: I.refresh, title: 'Weekly re-scan',
+              sub: 'Sunday morning reminder to take the next scan.',
+              right: switchEl(n.weekly, (v) => { n.weekly = v; save(); })
+            })
+          )
+        : h('div', { class: 'group rise', style: { '--i': 7 } },
+            growRow({
+              icon: I.bell, title: perm === 'denied' ? 'Notifications are blocked' : 'Turn on reminders',
+              sub: perm === 'denied'
+                ? 'Your browser is blocking them. Allow notifications for this site in its settings, then come back.'
+                : 'A daily nudge, a streak warning and a weekly scan reminder. Nothing else, ever.',
+              ext: perm === 'denied',
+              onClick: perm === 'denied' ? null : askNotifications
+            })),
+
+      /* scores & legal */
+      h('p', { class: 'sect rise', style: { '--i': 8 } }, 'Scores & legal'),
+      h('div', { class: 'group rise', style: { '--i': 9 } },
+        growRow({ icon: I.sigma, title: 'How we calculate your scores', sub: 'What each score measures, and what it cannot tell you.', chev: true, onClick: () => go('how') }),
+        growRow({ icon: I.doc, title: 'Privacy Policy', sub: 'What is stored, and where it lives.', chev: true, onClick: () => openDoc('privacy') }),
+        growRow({ icon: I.terms, title: 'Terms of Service', sub: 'What to expect when you use Lumorph.', chev: true, onClick: () => openDoc('terms') }),
+        growRow({ icon: I.person, title: 'How deletion works', sub: 'What happens when you delete your data.', chev: true, onClick: () => openDoc('deletion') }),
+        growRow({ icon: I.shield, title: 'Data consent', sub: consent, tick: true })
+      ),
+
+      /* promo */
+      h('p', { class: 'sect rise', style: { '--i': 10 } }, 'Promo'),
+      h('div', { class: 'group rise', style: { '--i': 11 } },
+        growRow({ icon: I.gift, title: 'Redeem a promo code', sub: 'Got a code from a creator or a friend?', chev: true, onClick: redeemPromo })),
+
+      /* subscription */
+      h('p', { class: 'sect rise', style: { '--i': 12 } }, 'Subscription'),
+      h('div', { class: 'group rise', style: { '--i': 13 } },
+        growRow({ icon: I.check, title: 'No subscription. Ever.', sub: 'There is nothing to buy, restore or cancel.', tick: true })),
+
+      /* data */
+      h('p', { class: 'sect rise', style: { '--i': 14 } }, 'Data & account'),
+      h('div', { class: 'group rise', style: { '--i': 15 } },
+        growRow({ icon: I.braces, title: 'Export as JSON', sub: 'Every scan, measurement and quest.', down: true, onClick: exportJson }),
+        growRow({ icon: I.table, title: 'Export as spreadsheets', sub: 'The same data as CSV, one file per table.', down: true, onClick: exportCsv })),
+      h('div', { class: 'group rise', style: { '--i': 16, marginTop: '14px' } },
+        growRow({ icon: I.trash, title: 'Delete all data', sub: 'Permanently removes every scan from this device.', danger: true, chev: true, onClick: confirmWipe })),
+
+      h('p', { class: 'tiny center mt-20 rise', style: { '--i': 17 } },
+        'Lumorph v2 \u00b7 free, offline, no accounts')
     );
   };
 
-  function privacySheet() {
-    return h('div', {},
-      h('h2', { class: 'display sm' }, 'Privacy'),
-      h('p', { class: 'small mt-12' }, 'Lumorph has no server. Your photos, measurements, quests and scores are stored in this browser\u2019s local storage on this device. Nothing is uploaded, transmitted, sold or shared, because there is nowhere for it to go.'),
-      h('p', { class: 'small mt-12' }, 'Clearing your browser data, or using Delete all data, removes everything permanently. Export first if you want a copy.'),
-      h('p', { class: 'small mt-12' }, 'Face detection runs through MediaPipe, downloaded once from a public CDN and executed locally. Face recognition and face classification are not used \u2014 only landmark positions.'),
-      h('button', { class: 'btn primary mt-20', onclick: closeSheet }, 'Got it'));
+  function fireIfDue() {
+    const n = notifSettings();
+    if (!n.enabled) return;
+    const parts = (n.time || '20:00').split(':');
+    const now = new Date();
+    const due = new Date();
+    due.setHours(Number(parts[0]) || 20, Number(parts[1]) || 0, 0, 0);
+    if (now >= due && n.lastFired !== todayKey()) fireReminder();
   }
 
-  function exportData() {
-    const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: 'lumorph-export-' + todayKey() + '.json' });
-    document.body.append(a); a.click(); a.remove();
-    toast('Exported');
+  /* ---------- documents ---------- */
+  const DOCS = {
+    privacy: {
+      title: 'Privacy Policy',
+      body: [
+        ['h', 'The short version'],
+        ['p', 'Lumorph has no server. Your photos, measurements, quests and scores are stored in this browser on this device. Nothing is uploaded, transmitted, sold or shared, because there is nowhere for it to go.'],
+        ['h', 'What is stored'],
+        ['p', 'Your profile answers (name, gender, birth date, height, skin type, focus), the score and pillar values of each scan, a small thumbnail of each scan, and your quest history.'],
+        ['p', 'Face landmarks, the 478 measured points, are computed and discarded within the same moment. They are never written to storage.'],
+        ['h', 'What is not stored'],
+        ['p', 'No location, no contacts, no device identifiers, no analytics, no advertising identifiers, no crash reports. Lumorph makes no network request of its own after the app has loaded.'],
+        ['h', 'Third parties'],
+        ['p', 'Two public resources are downloaded once and then cached: the MediaPipe face landmarker and the two typefaces. Both are served by their own CDNs, which see a normal web request and nothing about your face. After that the app runs offline.'],
+        ['h', 'Deleting'],
+        ['p', 'Delete all data in Settings removes everything immediately and permanently. Clearing your browser data does the same. Export first if you want a copy.'],
+        ['h', 'Children'],
+        ['p', 'Lumorph is not intended for anyone under 13, and the app refuses a birth date that would make you younger.']
+      ]
+    },
+    terms: {
+      title: 'Terms of Service',
+      body: [
+        ['h', 'What Lumorph is'],
+        ['p', 'An appearance and self-improvement tool. It measures proportions in a photograph and turns them into scores you can track over time.'],
+        ['h', 'What it is not'],
+        ['p', 'It is not a medical device and it does not diagnose, treat or screen for any condition. Nothing in the app is medical, dermatological or psychological advice.'],
+        ['p', 'The scores are estimates from a single photograph. They describe the photo, not you, and they say nothing about your worth.'],
+        ['h', 'Using it'],
+        ['p', 'Take your own photos, or photos you have permission to use. Do not use Lumorph to rate other people.'],
+        ['h', 'Cost'],
+        ['p', 'Lumorph is free. There is no subscription, no in-app purchase and no advertising.'],
+        ['h', 'Changes'],
+        ['p', 'The scoring bands are calibrated over time. If a score shifts after an update, that is the yardstick moving, not you.']
+      ]
+    },
+    deletion: {
+      title: 'How deletion works',
+      body: [
+        ['h', 'Delete all data'],
+        ['p', 'Settings, then Delete all data. Every scan, thumbnail, quest and profile answer is erased from this browser in the same moment. There is no copy anywhere else, so there is nothing left to recover.'],
+        ['h', 'What goes'],
+        ['p', 'Your profile, all scans and their thumbnails, the quest history, XP and ranks, your consent record and your notification preferences.'],
+        ['h', 'What stays'],
+        ['p', 'Nothing. The app returns to the first screen as if it had never been opened.'],
+        ['h', 'Before you delete'],
+        ['p', 'Export as JSON or CSV if you want a record. Deletion cannot be undone.'],
+        ['h', 'Clearing browser data'],
+        ['p', 'Clearing site data in your browser does the same thing, without asking first. That is a browser action, not something Lumorph can prevent.']
+      ]
+    }
+  };
+
+  function openDoc(id) {
+    const d = DOCS[id];
+    if (!d) return;
+    const kids = [h('h2', { class: 'display sm' }, d.title)];
+    d.body.forEach(([kind, text]) => {
+      kids.push(kind === 'h' ? h('h3', {}, text) : h('p', {}, text));
+    });
+    kids.push(h('button', { class: 'btn primary mt-20', onclick: closeSheet }, 'Close'));
+    openSheet(h('div', { class: 'doc' }, kids));
   }
+
+  function redeemPromo() {
+    const input = h('input', { class: 'input', placeholder: 'Enter code', maxlength: '16', autocapitalize: 'characters' });
+    openSheet(h('div', {},
+      h('h2', { class: 'display sm' }, 'Redeem a promo code'),
+      h('p', { class: 'small mt-12' }, 'Lumorph has nothing to sell, so a code cannot unlock features. A creator code adds 100 XP to your account once.'),
+      h('div', { class: 'mt-16' }, input),
+      h('div', { class: 'row gap-10 mt-20' },
+        h('button', { class: 'btn ghost', onclick: closeSheet }, 'Cancel'),
+        h('button', { class: 'btn primary', onclick: () => {
+          const code = (input.value || '').trim().toUpperCase();
+          if (!code || code.length < 4) { toast('Enter a code of at least 4 characters'); return; }
+          S.promos = S.promos || {};
+          if (S.promos[code]) { toast('That code is already used'); return; }
+          S.promos[code] = Date.now();
+          S.xp += 100;
+          save();
+          closeSheet();
+          toast('+100 XP added');
+          go('settings');
+        } }, 'Apply'))));
+  }
+
   function confirmWipe() {
     openSheet(h('div', {},
       h('h2', { class: 'display sm' }, 'Delete everything?'),
-      h('p', { class: 'small mt-12' }, 'This removes every scan, photo and quest from this browser. It cannot be undone.'),
+      h('p', { class: 'small mt-12' }, 'This removes every scan, photo, quest and profile answer from this browser. It cannot be undone, and there is no copy anywhere else.'),
       h('div', { class: 'row gap-10 mt-20' },
         h('button', { class: 'btn ghost', onclick: closeSheet }, 'Keep it'),
         h('button', { class: 'btn danger', onclick: () => {
-          localStorage.removeItem(KEY);
+          try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
           S = blank();
+          notifSettings();
           closeSheet();
           onb = null;
           go('onboarding');
@@ -1599,43 +1901,104 @@
         } }, 'Delete'))));
   }
 
+  function downloadFile(name, text, type) {
+    const blob = new Blob([text], { type });
+    const a = h('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.append(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  }
+
+  function exportJson() {
+    downloadFile('lumorph-export-' + todayKey() + '.json', JSON.stringify(S, null, 2), 'application/json');
+    toast('Exported');
+  }
+
+  function exportCsv() {
+    const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const scanRows = [['scan_id', 'date', 'overall', 'harmony', 'angularity', 'dimorphism', 'features', 'skin'].join(',')];
+    S.scans.forEach((s) => {
+      scanRows.push([
+        esc(s.id), esc(new Date(s.ts).toISOString()), s.overall,
+        s.pillars.harmony, s.pillars.angularity, s.pillars.dimorphism, s.pillars.features, s.pillars.skin
+      ].join(','));
+    });
+    downloadFile('lumorph-scans-' + todayKey() + '.csv', scanRows.join('\n'), 'text/csv');
+
+    const questRows = [['date'].concat(QUESTS.map((q) => q.id)).join(',')];
+    Object.keys(S.quests).sort().forEach((k) => {
+      const q = S.quests[k];
+      questRows.push([k].concat(QUESTS.map((x) => (q[x.id] ? 1 : 0))).join(','));
+    });
+    setTimeout(() => {
+      downloadFile('lumorph-quests-' + todayKey() + '.csv', questRows.join('\n'), 'text/csv');
+    }, 300);
+    toast('Exported');
+  }
+
   /* ---------- how scores work ---------- */
   ROUTES.how = function (root) {
+    const sec = (title, paras) => h('div', { class: 'doc', style: { marginTop: '26px' } },
+      h('h3', { style: { marginTop: 0 } }, title),
+      paras.map((p) => h('p', {}, p)));
+
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
-        h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '14px' } },
-          h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('profile') },
+        h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '16px' } },
+          h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('settings') },
             h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } }))),
         h('p', { class: 'eyebrow' }, 'Transparency'),
-        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'How we calculate ', h('em', {}, 'your scores')),
-        h('p', { class: 'lede' }, 'No black box. Here is every input, every weight, and what the number cannot tell you.')),
+        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'How these numbers are ', h('em', {}, 'calculated')),
+        h('p', { class: 'lede' }, 'No black box. Every input, every weight, and the limits of what a photograph can tell you.')),
 
       h('div', { class: 'card mt-20 rise', style: { '--i': 1 } },
-        h('div', { class: 'eyebrow' }, 'The pipeline'),
-        [
-          ['Landmarks', 'MediaPipe finds 478 points on your face, on this device. The points are never uploaded.'],
-          ['Measurements', 'Those points become 22 ratios and angles: symmetry, thirds, jaw width, canthal tilt, lip ratios and so on.'],
-          ['Scoring', 'Each measurement scores 10 inside its ideal band and falls away smoothly outside it. No cliffs, no randomness.'],
-          ['Pillars', 'Measurements average into five pillars, then into one overall score out of ten.'],
-          ['Skin', 'Five appearance signals read from the pixels of the photo itself: tone variance, redness, under-eye contrast, shine, texture.']
-        ].map(([t, s], i) => h('div', { class: 'row gap-12', style: { padding: '12px 0', borderTop: i ? '1px solid var(--line)' : 'none' } },
-          h('div', { class: 'pill gold', style: { width: '26px', height: '26px', padding: '0', justifyContent: 'center', flex: '0 0 auto' } }, String(i + 1)),
-          h('div', {}, h('div', { style: { fontSize: '14px', fontWeight: '600' } }, t), h('div', { class: 'small' }, s))))),
+        h('p', { class: 'doc' }, h('span', { class: 'note', style: { display: 'block' } },
+          'The numbers describe your photo, not you. They say nothing about your worth, and Lumorph never compares you with another person.'))),
 
-      h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
-        h('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Weights'),
-        E.PILLARS.map((p) => h('div', { class: 'row between', style: { padding: '9px 0', borderTop: '1px solid var(--line)' } },
-          h('div', {}, h('div', { style: { fontSize: '13.5px', fontWeight: '600' } }, p.label), h('div', { class: 'tiny' }, p.blurb)),
-          h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } }, Math.round(p.weight * 100) + '%')))),
+      h('div', { class: 'rise', style: { '--i': 2 } },
+        sec('Face analysis', [
+          'Lumorph measures proportions of your face from one front photo: how the parts of the face relate to each other in width, height and angle. Everything runs on this device.',
+          'Google\u2019s MediaPipe Face Landmarker finds 478 points on your face. The points are used to compute the measurements and are then discarded \u2014 never uploaded, never stored, never written to disk.',
+          'While you hold still before capture, several frames are averaged so the measurements do not jitter. If you upload a photo instead, the numbers come from that single frame.'
+        ]),
+        sec('The five groups', [
+          'Harmony (30% of the overall score): mirror symmetry, the facial thirds, the facial fifths, eye spacing and the midface ratio.',
+          'Angularity (20%): jaw width relative to cheek width, the gonial angle, and chin width.',
+          'Dimorphism (15%): how strongly your features read as your stated gender \u2014 brow prominence, jaw width, lip fullness, cheekbone width.',
+          'Features (25%): canthal tilt, eye aperture, nose width against the eye gap, philtrum to chin, mouth to nose width, upper to lower lip.',
+          'Skin signals (10%): an appearance rating read from the colours and brightness of the same photo.'
+        ]),
+        sec('How a measurement becomes a score', [
+          'Each measurement is compared with a reference band. Inside the band it scores 10. Outside it, the score falls away smoothly rather than dropping off a cliff, so two similar faces produce two similar numbers.',
+          'A group score is the average of its measurements. The overall score is the weighted average of the groups, rounded to one decimal.',
+          'The same photo always produces the same score. There is no randomness and no model adjusting the result.'
+        ]),
+        sec('Skin signals', [
+          'The skin score is an appearance rating of the photograph, not a measurement of your skin. No hydration, oil, blood flow, UV or any other bodily value is read, computed or stored.',
+          'Five signals are read from the pixels: tone variance across the cheeks and forehead, redness, under-eye contrast, T-zone shine, and high-frequency texture. It is deterministic arithmetic on the image.',
+          'Because it reads a photo, light, camera, lens and make-up move these numbers as much as your skin does. Treat them as a rough trend line for your own photos over time.'
+        ]),
+        sec('What affects accuracy', [
+          'Head angle, distance, lens, lighting and expression all change these numbers. The scanner checks your head angle, light, sharpness and stillness before it will capture, which reduces this but cannot remove it.',
+          'Compare scans taken the same way: same room, same light, same distance, phone at eye level. A score that moves because you moved the lamp is not progress.'
+        ]),
+        sec('What is not measured', [
+          'The upper third of the face above the hairline, hair density, and anything that needs a true side view. There is no side-profile capture yet, so chin projection and the side gonial angle are not part of your score.',
+          'Nothing about health, hormones, body composition or age is inferred.'
+        ]),
+        sec('What Lumorph keeps', [
+          'The scores from each saved scan, on this device only, plus a small thumbnail of the photo so you can see your history.',
+          'Not the 478 face points, not the raw measurement values, and nothing at all on a server \u2014 there is no server.'
+        ]),
+        sec('Not medical advice', [
+          'Lumorph does not diagnose, treat or screen for any condition, and nothing here is a medical assessment. The scores are estimates from your photos, not personalised advice.',
+          'Speak to a doctor or dermatologist before acting on anything you see here, especially if you are pregnant, breastfeeding, under 18, or managing a medical condition.',
+          'Lumorph must never be used to check for acne, moles, skin cancer or anything else. See a dermatologist for that.'
+        ])),
 
-      h('div', { class: 'card mt-16 rise', style: { '--i': 3 } },
-        h('div', { class: 'row gap-10', style: { marginBottom: '8px' } },
-          h('span', { html: I.shield, style: { width: '18px', height: '18px', color: 'var(--gold)', display: 'grid' } }),
-          h('span', { style: { fontWeight: '600', fontSize: '13.5px' } }, 'What this is not')),
-        h('p', { class: 'small' }, 'It is not a measurement of attractiveness, and it is not a medical device. It reads geometry from one photo in one moment. Light, lens, angle and expression all move the number. Use it as a trend line against your own past scans, never as a verdict.'),
-        h('p', { class: 'small mt-12' }, 'It does not diagnose, treat or screen for any condition, and it must not be used to check for acne, moles or anything else. See a dermatologist for that.')),
-
-      h('button', { class: 'btn ghost mt-20 rise', style: { '--i': 4 }, onclick: () => go('home') }, 'Back to home')
+      h('div', { class: 'row gap-10 mt-20 rise', style: { '--i': 3 } },
+        h('button', { class: 'btn ghost', onclick: () => go('settings') }, 'Back to settings'),
+        h('button', { class: 'btn primary', onclick: () => go('home') }, 'Home'))
     );
   };
 
@@ -1730,6 +2093,22 @@
     paint(ROUTES[startRoute] ? startRoute : 'home');
   }
   history.replaceState({ r: S.onboarded ? (ROUTES[startRoute] ? startRoute : 'home') : 'onboarding' }, '', location.href);
+
+  /* branded splash: hold just long enough to read, then get out of the way */
+  (function dismissSplash() {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    const started = performance.now();
+    const MIN = 820;
+    setTimeout(() => {
+      splash.classList.add('gone');
+      setTimeout(() => { if (splash.parentNode) splash.remove(); }, 620);
+    }, Math.max(0, MIN - (performance.now() - started)));
+  })();
+
+  notifSettings();
+  scheduleReminders();
+  setTimeout(fireIfDue, 1200);
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
