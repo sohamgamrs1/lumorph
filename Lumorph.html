@@ -54,24 +54,49 @@
 
   --serif: "Instrument Serif", "Fraunces", Georgia, "Times New Roman", serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* theme-aware pieces */
+  --accent-solid: linear-gradient(180deg, #FFF6E2, var(--gold) 55%, var(--gold-2));
+  --on-accent: #171308;
+  --bar-grad: linear-gradient(90deg, var(--gold-3), var(--gold), #FFF3D6);
+  --thumb-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  --heat-1: rgba(234, 213, 162, 0.22);
+  --heat-2: rgba(234, 213, 162, 0.45);
+  --heat-3: rgba(234, 213, 162, 0.72);
+  --heat-4: var(--gold);
+  --heat-frozen: rgba(122, 132, 160, 0.20);
+  --grain-opacity: 0.05;
+  --aurora-opacity: 1;
 }
 
 [data-theme="light"] {
-  --ink: #17161A;
-  --muted: #6B6660;
-  --faint: #8E8880;
-  --bg: #F6F3EC;
+  --ink: #1A1815;
+  --muted: #6B655C;
+  --faint: #918A80;
+  --bg: #F7F4ED;
   --bg-2: #FFFFFF;
-  --surface: rgba(23, 22, 26, 0.045);
-  --surface-2: rgba(23, 22, 26, 0.075);
-  --line: rgba(23, 22, 26, 0.10);
-  --line-strong: rgba(23, 22, 26, 0.2);
-  --gold: #8A6A2E;
-  --gold-2: #A8873F;
-  --gold-3: #C9AC6C;
-  --gold-soft: rgba(138, 106, 46, 0.12);
-  --danger: #C0513F;
-  --good: #3E8A5C;
+  --surface: rgba(26, 24, 21, 0.045);
+  --surface-2: rgba(26, 24, 21, 0.075);
+  --line: rgba(26, 24, 21, 0.10);
+  --line-strong: rgba(26, 24, 21, 0.22);
+  --gold: #8C6A2A;
+  --gold-2: #A98338;
+  --gold-3: #C9A961;
+  --gold-soft: rgba(140, 106, 42, 0.10);
+  --danger: #B3402F;
+  --good: #2F7A4F;
+
+  --accent-solid: linear-gradient(180deg, #A98338, #8C6A2A);
+  --on-accent: #FFFCF4;
+  --bar-grad: linear-gradient(90deg, #D9BC7E, #A98338);
+  --thumb-bg: linear-gradient(180deg, #FFFFFF, #F2EDE2);
+  --heat-1: rgba(140, 106, 42, 0.16);
+  --heat-2: rgba(140, 106, 42, 0.34);
+  --heat-3: rgba(140, 106, 42, 0.56);
+  --heat-4: #8C6A2A;
+  --heat-frozen: rgba(110, 120, 150, 0.14);
+  --grain-opacity: 0.025;
+  --aurora-opacity: 0.6;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -133,6 +158,7 @@ a { color: inherit; }
     radial-gradient(45% 45% at 75% 10%, rgba(120, 96, 200, 0.16), transparent 72%),
     radial-gradient(40% 40% at 50% 45%, rgba(234, 213, 162, 0.10), transparent 70%);
   filter: blur(18px);
+  opacity: var(--aurora-opacity);
   will-change: transform;
   animation: drift 26s var(--ease) infinite alternate;
 }
@@ -147,7 +173,7 @@ a { color: inherit; }
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.05;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
 }
 
@@ -295,9 +321,9 @@ a { color: inherit; }
 }
 .btn:active { transform: scale(0.975); }
 .btn.primary {
-  background: linear-gradient(180deg, #FFF6E2, var(--gold) 55%, var(--gold-2));
+  background: var(--accent-solid);
   border-color: rgba(255, 255, 255, 0.4);
-  color: #171308;
+  color: var(--on-accent);
   box-shadow: 0 10px 30px -12px rgba(234, 213, 162, 0.55);
 }
 .btn.primary:active { box-shadow: 0 4px 16px -10px rgba(234, 213, 162, 0.5); }
@@ -307,7 +333,7 @@ a { color: inherit; }
 .btn[disabled] { opacity: 0.38; pointer-events: none; }
 .btn .spin {
   width: 16px; height: 16px; border-radius: 50%;
-  border: 2px solid rgba(0,0,0,0.25); border-top-color: #171308;
+  border: 2px solid rgba(0,0,0,0.25); border-top-color: var(--on-accent);
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -344,7 +370,7 @@ a { color: inherit; }
   position: absolute;
   top: 4px; left: 4px; bottom: 4px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+  background: var(--thumb-bg);
   border: 1px solid var(--line-strong);
   transition: transform var(--t-mid) var(--spring), width var(--t-mid) var(--spring);
   will-change: transform, width;
@@ -424,8 +450,8 @@ a { color: inherit; }
   height: 46px;
   margin: 0 4px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #FFF6E2, var(--gold) 55%, var(--gold-2));
-  color: #171308;
+  background: var(--accent-solid);
+  color: var(--on-accent);
   flex-direction: row;
   gap: 7px;
   font-size: 13px;
@@ -442,6 +468,10 @@ a { color: inherit; }
   stroke: url(#goldGrad);
   stroke-linecap: round;
   filter: drop-shadow(0 0 10px rgba(234, 213, 162, 0.35));
+}
+[data-theme="light"] .ring .prog {
+  stroke: url(#goldGradLight);
+  filter: drop-shadow(0 0 6px rgba(140, 106, 42, 0.22));
 }
 .ring .mid {
   position: absolute;
@@ -471,7 +501,7 @@ a { color: inherit; }
   inset: 0;
   width: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--gold-3), var(--gold), #FFF3D6);
+  background: var(--bar-grad);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 900ms var(--ease);
@@ -524,8 +554,8 @@ a { color: inherit; }
 }
 .quest .tick svg { width: 14px; height: 14px; opacity: 0; transform: scale(0.4); transition: opacity 160ms var(--ease), transform 220ms var(--spring); }
 .quest .tick:active { transform: scale(0.88); }
-.quest.done .tick { background: linear-gradient(180deg, #FFF6E2, var(--gold) 60%, var(--gold-2)); border-color: transparent; }
-.quest.done .tick svg { opacity: 1; transform: none; color: #171308; }
+.quest.done .tick { background: var(--accent-solid); border-color: transparent; }
+.quest.done .tick svg { opacity: 1; transform: none; color: var(--on-accent); }
 .quest.done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
 .quest .xp {
   flex: 0 0 auto;
@@ -554,12 +584,12 @@ a { color: inherit; }
 .day .mark { width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
 .day.done .mark { background: var(--gold); box-shadow: 0 0 8px rgba(234,213,162,0.7); }
 .day.today {
-  background: linear-gradient(180deg, #FFF6E2, var(--gold) 60%, var(--gold-2));
+  background: var(--accent-solid);
   border-color: transparent;
-  color: #171308;
+  color: var(--on-accent);
 }
-.day.today .d, .day.today .n { color: #171308; }
-.day.today .mark { background: rgba(23,19,8,0.5); box-shadow: none; }
+.day.today .d, .day.today .n { color: var(--on-accent); }
+.day.today .mark { background: currentColor; opacity: 0.55; box-shadow: none; }
 
 /* ---------- heatmap ---------- */
 .heat { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
@@ -573,11 +603,11 @@ a { color: inherit; }
   transition-delay: calc(var(--i, 0) * 9ms);
 }
 .heat.in i { transform: none; opacity: 1; }
-.heat i.l1 { background: rgba(234, 213, 162, 0.22); }
-.heat i.l2 { background: rgba(234, 213, 162, 0.45); }
-.heat i.l3 { background: rgba(234, 213, 162, 0.72); }
-.heat i.l4 { background: var(--gold); }
-.heat i.frozen { background: rgba(120, 130, 160, 0.22); }
+.heat i.l1 { background: var(--heat-1); }
+.heat i.l2 { background: var(--heat-2); }
+.heat i.l3 { background: var(--heat-3); }
+.heat i.l4 { background: var(--heat-4); }
+.heat i.frozen { background: var(--heat-frozen); }
 
 /* ---------- sparkline ---------- */
 .spark { width: 100%; height: 96px; display: block; overflow: visible; }
@@ -641,7 +671,7 @@ a { color: inherit; }
     radial-gradient(120% 100% at 0% 0%, rgba(234,213,162,0.16), transparent 60%),
     var(--surface-2);
 }
-.choice[aria-pressed="true"] .glyph { background: var(--gold); color: #171308; }
+.choice[aria-pressed="true"] .glyph { background: var(--accent-solid); color: var(--on-accent); }
 .choice .check {
   position: absolute; top: 12px; right: 12px;
   width: 18px; height: 18px; border-radius: 50%;
@@ -649,8 +679,8 @@ a { color: inherit; }
   display: grid; place-items: center;
   transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform 200ms var(--spring);
 }
-.choice .check svg { width: 10px; height: 10px; opacity: 0; transform: scale(0.5); transition: all 180ms var(--spring); color: #171308; }
-.choice[aria-pressed="true"] .check { background: var(--gold); border-color: transparent; transform: scale(1.06); }
+.choice .check svg { width: 10px; height: 10px; opacity: 0; transform: scale(0.5); transition: all 180ms var(--spring); color: var(--on-accent); }
+.choice[aria-pressed="true"] .check { background: var(--gold); border-color: transparent; transform: scale(1.06); color: var(--on-accent); }
 .choice[aria-pressed="true"] .check svg { opacity: 1; transform: none; }
 
 /* progress dots for onboarding */
@@ -760,7 +790,7 @@ a { color: inherit; }
 .proc-step.done { opacity: 1; }
 .proc-step .b { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: grid; place-items: center; }
 .proc-step .b svg { width: 11px; height: 11px; opacity: 0; }
-.proc-step.done .b { background: var(--gold); border-color: transparent; color: #171308; }
+.proc-step.done .b { background: var(--gold); border-color: transparent; color: var(--on-accent); }
 .proc-step.done .b svg { opacity: 1; }
 .proc-step .lbl { font-size: 14px; font-weight: 550; }
 .proc-step .spin-sm {
@@ -871,6 +901,152 @@ a { color: inherit; }
 .onb .body { flex: 1; padding-top: 18px; }
 .onb .foot { padding: 18px 0 26px; }
 
+/* ---------- form feedback ---------- */
+.hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--faint);
+  letter-spacing: 0.01em;
+}
+.field-error {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--danger);
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+  transition: opacity 200ms var(--ease), transform 240ms var(--ease);
+}
+.field-error.on { opacity: 1; transform: none; }
+.field-error::before {
+  content: "";
+  display: inline-block;
+  width: 5px; height: 5px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 2px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  18% { transform: translate3d(-7px, 0, 0); }
+  36% { transform: translate3d(6px, 0, 0); }
+  54% { transform: translate3d(-4px, 0, 0); }
+  72% { transform: translate3d(3px, 0, 0); }
+  88% { transform: translate3d(-1px, 0, 0); }
+}
+.btn.shake { animation: shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* ---------- one-time entrance ---------- */
+.onb.instant .rise {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  transition-delay: 0s;
+}
+.onb.step-in { animation: stepIn 260ms var(--ease) both; }
+@keyframes stepIn {
+  from { opacity: 0; transform: translate3d(0, 7px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- range input ---------- */
+.ruler {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 32px;
+  margin: 22px 0 0;
+  background: transparent;
+  cursor: pointer;
+}
+.ruler::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.ruler::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px; height: 26px;
+  margin-top: -11px;
+  border-radius: 50%;
+  background: var(--accent-solid);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.7);
+  transition: transform 140ms var(--spring);
+}
+.ruler:active::-webkit-slider-thumb { transform: scale(1.08); }
+.ruler::-moz-range-track {
+  height: 5px;
+  border-radius: 99px;
+  background: var(--surface-2);
+}
+.ruler::-moz-range-thumb {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: var(--gold);
+}
+
+.num-badge {
+  width: 26px; height: 26px;
+  padding: 0;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+/* segmented controls that carry no sliding thumb */
+.segmented.no-thumb button[aria-selected="true"] {
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+
+/* ---------- light theme wash ---------- */
+[data-theme="light"] .aurora {
+  background:
+    radial-gradient(50% 50% at 28% 18%, rgba(176, 138, 70, 0.20), transparent 70%),
+    radial-gradient(45% 45% at 76% 12%, rgba(146, 138, 196, 0.10), transparent 72%),
+    radial-gradient(42% 42% at 50% 46%, rgba(214, 188, 130, 0.16), transparent 70%);
+  filter: blur(24px);
+}
+[data-theme="light"] .card.gold {
+  background:
+    radial-gradient(120% 120% at 12% 0%, rgba(169, 131, 56, 0.13), transparent 58%),
+    linear-gradient(180deg, #FFFFFF, #FDFBF5);
+  border-color: rgba(140, 106, 42, 0.22);
+}
+[data-theme="light"] .tabbar .inner { box-shadow: 0 18px 40px -24px rgba(26, 24, 21, 0.45); }
+
+/* ---------- responsive ---------- */
+.grow { min-width: 0; }
+.display.xl { font-size: clamp(34px, 10.5vw, 46px); }
+.display.lg { font-size: clamp(27px, 8.6vw, 36px); }
+.display.md { font-size: clamp(22px, 6.4vw, 27px); }
+.lede { font-size: clamp(13.5px, 3.7vw, 14.5px); }
+
+.app { overflow-x: clip; }
+
+@media (max-width: 359px) {
+  :root { --pad: 16px; }
+  .choices { gap: 8px; }
+  .choice { padding: 13px 11px; min-height: 88px; }
+  .week { gap: 5px; }
+  .day { padding: 7px 0 6px; border-radius: 13px; }
+  .ring .val { font-size: 40px !important; }
+  .tabbar .scan-fab { width: 68px; font-size: 12px; }
+  .btn { height: 50px; font-size: 14.5px; }
+}
+
+@media (max-height: 640px) {
+  .onb .body { padding-top: 10px; }
+  .onb .foot { padding: 12px 0 18px; }
+  .proc { min-height: 60dvh; gap: 18px; }
+}
+
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -894,6 +1070,9 @@ a { color: inherit; }
       d.querySelector('.msg').textContent = msg;
     };
     window.addEventListener('error', function (e) {
+      var v = document.getElementById('view');
+      // only take over the screen if the app never rendered at all
+      if (!v || v.children.length) return;
       if (e && e.message) window.__bootFail(e.message + (e.lineno ? ' \u2014 line ' + e.lineno : ''));
     }, true);
     setTimeout(function () {
@@ -927,6 +1106,11 @@ a { color: inherit; }
         <stop offset="0%" stop-color="#FFF4D9" />
         <stop offset="55%" stop-color="#EAD5A2" />
         <stop offset="100%" stop-color="#C6A167" />
+      </linearGradient>
+      <linearGradient id="goldGradLight" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#C9A961" />
+        <stop offset="60%" stop-color="#A98338" />
+        <stop offset="100%" stop-color="#7E5F24" />
       </linearGradient>
       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="rgba(234,213,162,0.30)" />
@@ -1475,31 +1659,37 @@ a { color: inherit; }
   }
 
   /* ---------------- icons ---------------- */
+  /* One grid: 24x24, 1.75 stroke, round caps and joins. */
+  const SVG = (inner, fill) =>
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="' + (fill ? 'currentColor' : 'none') +
+    '" stroke="' + (fill ? 'none' : 'currentColor') +
+    '" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
+
   const I = {
-    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>',
-    progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l4.5-5 3.5 3 3-4.5L20 14"/><circle cx="18.5" cy="6" r="1.6"/></svg>',
-    profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c1-3.6 3.8-5.4 7.2-5.4s6.2 1.8 7.2 5.4"/></svg>',
-    scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3.2"/></svg>',
-    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
-    chev: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
-    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.2 5L20 6.5"/></svg>',
-    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>',
-    camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h2.5L8 6h8l1.5 2.5H20v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg>',
-    sparkle: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l1.9 5.6 5.6 1.9-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9z"/><path d="M18.5 15.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>',
-    drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5c3.2 4 5.5 6.6 5.5 9.4A5.5 5.5 0 0 1 12 18.4a5.5 5.5 0 0 1-5.5-5.5c0-2.8 2.3-5.4 5.5-9.4z"/></svg>',
-    moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></svg>',
-    sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>',
-    water: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 12.5h12l-1.2 7a1.5 1.5 0 0 1-1.5 1.3H8.7a1.5 1.5 0 0 1-1.5-1.3z"/><path d="M9 12.5V7a3 3 0 0 1 6 0v5.5"/></svg>',
-    posture: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 8v7M8 20l4-5 4 5M6.5 11h11"/></svg>',
-    comb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v5H5z"/><path d="M7 9v11M11 9v11M15 9v11M19 9v11"/></svg>',
-    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>',
-    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 7l1.9 1.1M17.9 15.9l1.9 1.1M4.2 17l1.9-1.1M17.9 8.1 19.8 7"/></svg>',
-    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l7 2.5v6c0 4.4-3 7.6-7 9.5-4-1.9-7-5.1-7-9.5v-6z"/></svg>',
-    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M7.5 11.5 12 16l4.5-4.5"/><path d="M4 20h16"/></svg>',
-    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>',
-    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 8h.01"/></svg>',
-    bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg>'
+    home: SVG('<path d="M3.6 10.4 12 3.8l8.4 6.6V19a1.4 1.4 0 0 1-1.4 1.4H5A1.4 1.4 0 0 1 3.6 19z"/><path d="M9.6 20.4v-5.8h4.8v5.8"/>'),
+    progress: SVG('<path d="M4.2 20V13.2"/><path d="M9.6 20V8.2"/><path d="M15 20v-5.4"/><path d="M20.4 20V4.6"/>'),
+    profile: SVG('<circle cx="12" cy="8.4" r="3.7"/><path d="M4.6 20.4c.6-3.7 3.6-5.9 7.4-5.9s6.8 2.2 7.4 5.9"/>'),
+    scan: SVG('<path d="M4.2 8.8V6.2A2 2 0 0 1 6.2 4.2h2.6"/><path d="M15.2 4.2h2.6a2 2 0 0 1 2 2v2.6"/><path d="M19.8 15.2v2.6a2 2 0 0 1-2 2h-2.6"/><path d="M8.8 19.8H6.2a2 2 0 0 1-2-2v-2.6"/><circle cx="12" cy="12" r="3.1"/>'),
+    back: SVG('<path d="M14.6 5.4 8 12l6.6 6.6"/>'),
+    chev: SVG('<path d="M9.4 5.4 16 12l-6.6 6.6"/>'),
+    check: SVG('<path d="M4.6 12.7 9.4 17.5 19.4 6.9"/>'),
+    close: SVG('<path d="M6.3 6.3 17.7 17.7"/><path d="M17.7 6.3 6.3 17.7"/>'),
+    upload: SVG('<path d="M12 15.4V4"/><path d="M7.7 8.3 12 4l4.3 4.3"/><path d="M4.2 14.8v3.4a2 2 0 0 0 2 2h11.6a2 2 0 0 0 2-2v-3.4"/>'),
+    camera: SVG('<rect x="3.4" y="7.4" width="17.2" height="12" rx="2.8"/><path d="M8.5 7.4 9.9 4.8h4.2l1.4 2.6"/><circle cx="12" cy="13.3" r="3.1"/>'),
+    sparkle: SVG('<path d="M10.6 3.6c.5 3.1 1.9 4.5 5 5-3.1.5-4.5 1.9-5 5-.5-3.1-1.9-4.5-5-5 3.1-.5 4.5-1.9 5-5z"/><path d="M17.8 13.2c.3 1.8 1.1 2.6 2.9 2.9-1.8.3-2.6 1.1-2.9 2.9-.3-1.8-1.1-2.6-2.9-2.9 1.8-.3 2.6-1.1 2.9-2.9z"/>', true),
+    drop: SVG('<path d="M12 3.6c3.1 3.9 5.3 6.6 5.3 9.3a5.3 5.3 0 0 1-10.6 0c0-2.7 2.2-5.4 5.3-9.3z"/>'),
+    moon: SVG('<path d="M20.2 14.7A8.5 8.5 0 0 1 9.3 3.8a8.6 8.6 0 1 0 10.9 10.9z"/>'),
+    sun: SVG('<circle cx="12" cy="12" r="4.1"/><path d="M12 2.7v2.2"/><path d="M12 19.1v2.2"/><path d="M2.7 12h2.2"/><path d="M19.1 12h2.2"/><path d="M5.5 5.5 7.1 7.1"/><path d="M16.9 16.9l1.6 1.6"/><path d="M18.5 5.5 16.9 7.1"/><path d="M7.1 16.9 5.5 18.5"/>'),
+    water: SVG('<path d="M6.6 5.4h10.8l-1 12.8a2 2 0 0 1-2 1.9H9.6a2 2 0 0 1-2-1.9z"/><path d="M7 10.8h10"/>'),
+    posture: SVG('<circle cx="12" cy="4.9" r="2.2"/><path d="M12 7.5v7.1"/><path d="M8.5 9.7h7"/><path d="M12 14.6 9.5 20.7"/><path d="M12 14.6l2.5 6.1"/>'),
+    groom: SVG('<path d="M7.2 4.4h9.6a1.4 1.4 0 0 1 1.4 1.4v3H5.8v-3a1.4 1.4 0 0 1 1.4-1.4z"/><path d="M12 8.8v9.4"/><path d="M9.2 19.6h5.6"/>'),
+    refresh: SVG('<path d="M19.8 12a7.8 7.8 0 1 1-2.3-5.5"/><path d="M19.9 3.9v5.2h-5.2"/>'),
+    gear: SVG('<path d="M4 7.6h9.2"/><path d="M18.4 7.6h1.6"/><path d="M4 16.4h1.6"/><path d="M10.8 16.4H20"/><circle cx="15.8" cy="7.6" r="2.2"/><circle cx="8.2" cy="16.4" r="2.2"/>'),
+    shield: SVG('<path d="M12 3.4 19 5.9v5.7c0 4.3-2.9 7.4-7 9-4.1-1.6-7-4.7-7-9V5.9z"/><path d="M9.2 11.8l2 2 3.6-3.8"/>'),
+    download: SVG('<path d="M12 3.8v11.4"/><path d="M7.7 11 12 15.3 16.3 11"/><path d="M4.2 20h15.6"/>'),
+    trash: SVG('<path d="M4.6 6.8h14.8"/><path d="M9.4 6.8V4.5h5.2v2.3"/><path d="M6.7 6.8l.9 12.3a1.9 1.9 0 0 0 1.9 1.7h5a1.9 1.9 0 0 0 1.9-1.7l.9-12.3"/><path d="M10.4 10.6v6.3"/><path d="M13.6 10.6v6.3"/>'),
+    info: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 11.3v5.1"/><circle cx="12" cy="7.9" r="1" fill="currentColor" stroke="none"/>'),
+    bolt: SVG('<path d="M13.4 2.6 5.2 13.4h5.6l-.9 8 8.2-10.8h-5.6z"/>', true)
   };
 
   /* ---------------- store ---------------- */
@@ -1552,7 +1742,7 @@ a { color: inherit; }
     for (let i = 0; i < 400; i++) {
       const k = todayKey(d);
       const q = S.quests[k] || {};
-      const done = Object.values(q).filter(Boolean).length;
+      const done = QUESTS.filter((x) => q[x.id]).length;
       if (done >= 1) { n++; d.setDate(d.getDate() - 1); }
       else if (i === 0) { d.setDate(d.getDate() - 1); }
       else break;
@@ -1560,7 +1750,7 @@ a { color: inherit; }
     return n;
   }
   function bestStreak() {
-    const keys = Object.keys(S.quests).filter((k) => Object.values(S.quests[k]).some(Boolean)).sort();
+    const keys = Object.keys(S.quests).filter((k) => QUESTS.some((x) => S.quests[k][x.id])).sort();
     let best = 0, run = 0, prev = null;
     keys.forEach((k) => {
       if (prev) {
@@ -1590,38 +1780,48 @@ a { color: inherit; }
     const from = o.from == null ? 0 : o.from;
     const dur = o.dur || 900;
     const dp = o.dp == null ? 1 : o.dp;
-    if (reduced()) { el.textContent = dp === 0 ? Math.round(to) : to.toFixed(dp); return; }
+    const write = (v) => { el.textContent = dp === 0 ? String(Math.round(v)) : v.toFixed(dp); };
+    if (reduced() || from === to) { write(to); return; }
+
+    let done = false;
     const start = performance.now();
     function frame(t) {
+      if (done) return;
       const p = Math.min(1, (t - start) / dur);
       const e = 1 - Math.pow(1 - p, 3);
-      const v = from + (to - from) * e;
-      el.textContent = dp === 0 ? Math.round(v) : v.toFixed(dp);
-      if (p < 1) raf(frame);
+      write(from + (to - from) * e);
+      if (p >= 1) { done = true; write(to); return; }
+      raf(frame);
     }
     raf(frame);
+    /* rAF stops in a background tab: land on the final value regardless */
+    setTimeout(() => { if (!done) { done = true; write(to); } }, dur + 120);
   }
   function animateRing(circle, pct, opts) {
     const o = opts || {};
     const r = parseFloat(circle.getAttribute('r'));
     const c = 2 * Math.PI * r;
-    if (reduced()) {
+    const land = () => {
       circle.style.strokeDasharray = c;
       circle.style.strokeDashoffset = c * (1 - pct);
-      return;
-    }
+    };
+    if (reduced()) { land(); return; }
     circle.style.strokeDasharray = c;
     circle.style.strokeDashoffset = c;
     const dur = o.dur || 1100;
     const start = performance.now();
     const to = c * (1 - pct);
+    let done = false;
     function frame(t) {
+      if (done) return;
       const p = Math.min(1, (t - start) / dur);
       const e = 1 - Math.pow(1 - p, 3);
       circle.style.strokeDashoffset = c - (c - to) * e;
-      if (p < 1) raf(frame);
+      if (p >= 1) { done = true; land(); return; }
+      raf(frame);
     }
     raf(frame);
+    setTimeout(() => { if (!done) { done = true; land(); } }, dur + 120);
   }
   let toastTimer;
   function toast(msg) {
@@ -1677,6 +1877,7 @@ a { color: inherit; }
     view.classList.toggle('no-tabs', name === 'onboarding' || name === 'processing');
     paintTabbar(isTab ? name : (name === 'scan' ? 'scan' : ''));
     if (isTab) paintTopbar(name);
+    window.scrollTo(0, 0);
     reveal(view);
     fillBars(view);
   }
@@ -1761,57 +1962,160 @@ a { color: inherit; }
   ];
 
   let onb = null;
+  const ONB_STEPS = 7;
+  const NAME_MAX = 12;
+  const MIN_AGE = 13;
+
   ROUTES.onboarding = function () {
-    onb = onb || {
-      step: 0,
-      name: (S.profile && S.profile.name) || '',
-      gender: (S.profile && S.profile.gender) || '',
-      birth: (S.profile && S.profile.birth) || '',
-      height: (S.profile && S.profile.height) || 175,
-      unit: 'cm',
-      skin: (S.profile && S.profile.skin) || [],
-      concerns: (S.profile && S.profile.concerns) || []
-    };
+    if (!onb) {
+      onb = {
+        step: 0,
+        name: (S.profile && S.profile.name) || '',
+        gender: (S.profile && S.profile.gender) || '',
+        birth: (S.profile && S.profile.birth) || '',
+        height: (S.profile && S.profile.height) || 175,
+        unit: 'cm',
+        skin: (S.profile && S.profile.skin) || [],
+        concerns: (S.profile && S.profile.concerns) || [],
+        error: '',
+        seenAnim: false
+      };
+    }
+    onb.error = '';
     renderOnb();
   };
+
+  /* Every step is validated on Continue, with a message that says what to do. */
+  function onbValidate(step) {
+    if (step === 0) {
+      const n = (onb.name || '').trim();
+      if (!n) return 'Enter your first name to continue.';
+      if (n.length < 2) return 'That name is too short \u2014 at least 2 characters.';
+      if (n.length > NAME_MAX) return 'Keep your name to ' + NAME_MAX + ' characters or fewer.';
+      if (/[0-9]/.test(n)) return 'Names cannot contain numbers.';
+      return '';
+    }
+    if (step === 1) return onb.gender ? '' : 'Choose one so the right reference ranges are used.';
+    if (step === 2) {
+      if (!onb.birth) return 'Add your date of birth to continue.';
+      const age = ageFrom(onb.birth);
+      if (!isFinite(age) || age < 0) return 'That date is in the future.';
+      if (age > 110) return 'That date does not look right.';
+      if (age < MIN_AGE) return 'You must be ' + MIN_AGE + ' or older to use Lumorph.';
+      return '';
+    }
+    if (step === 3) {
+      return (onb.height >= 120 && onb.height <= 230) ? '' : 'Pick a height between 120 and 230 cm.';
+    }
+    if (step === 4) return onb.skin.length ? '' : 'Pick at least one skin type.';
+    if (step === 5) return onb.concerns.length ? '' : 'Pick at least one focus.';
+    return '';
+  }
+
+  function onbBlocked() {
+    for (let s = 0; s <= 5; s++) {
+      const e = onbValidate(s);
+      if (e) { onb.step = s; return e; }
+    }
+    return '';
+  }
 
   function renderOnb() {
     view.innerHTML = '';
     topbar.innerHTML = '';
-    const steps = 7;
-    const pct = (onb.step + 1) / steps;
+
+    const first = !onb.seenAnim;
     const body = h('div', { class: 'body' });
+    const errorEl = h('p', { class: 'field-error' + (onb.error ? ' on' : ''), role: 'alert' }, onb.error || '');
     const foot = h('div', { class: 'foot' });
 
-    const back = h('button', { class: 'icon-btn ghost', 'aria-label': 'Back', onclick: () => {
-      if (onb.step === 0) return;
-      onb.step--; renderOnb();
-    } }, h('span', { html: I.back, style: { display: 'grid', width: '20px', height: '20px' } }));
+    const backBtn = onb.step > 0
+      ? h('button', {
+          class: 'icon-btn ghost', 'aria-label': 'Back', onclick: () => {
+            onb.step--; onb.error = ''; renderOnb();
+          }
+        }, h('span', { html: I.back, style: { display: 'grid', width: '20px', height: '20px' } }))
+      : h('span', { class: 'icon-btn ghost', 'aria-hidden': 'true', style: { visibility: 'hidden' } });
 
-    const wrap = h('div', { class: 'onb' },
-      h('div', { class: 'row gap-12', style: { alignItems: 'center' } }, back,
-        h('div', { class: 'steps', style: { flex: '1' } },
-          Array.from({ length: steps }, (_, i) => h('i', { class: i <= onb.step ? (i === onb.step ? 'now' : 'done') : '' })))),
-      body, foot
-    );
+    const stepsBar = h('div', { class: 'steps', style: { flex: '1' } },
+      Array.from({ length: ONB_STEPS }, (_, i) =>
+        h('i', { class: i <= onb.step ? (i === onb.step ? 'now' : 'done') : '' })));
 
-    const next = (fn) => h('button', { class: 'btn primary', onclick: fn }, 'Continue');
+    const wrap = h('div', { class: 'onb' + (first ? '' : ' instant') + (first ? '' : ' step-in') },
+      h('div', { class: 'row gap-12', style: { alignItems: 'center' } }, backBtn, stepsBar),
+      body, errorEl, foot);
 
+    /* helpers ------------------------------------------------------------- */
+    const rise = (i) => first ? { '--i': i } : {};
+    const riseCls = (i) => 'rise' + (first ? '' : ' in');
+
+    function clearErr() {
+      if (!onb.error) return;
+      onb.error = '';
+      errorEl.classList.remove('on');
+      errorEl.textContent = '';
+    }
+    function showErr(msg) {
+      onb.error = msg;
+      errorEl.textContent = msg;
+      errorEl.classList.add('on');
+      const btn = foot.querySelector('.btn.primary');
+      if (btn) {
+        btn.classList.remove('shake');
+        void btn.offsetWidth;
+        btn.classList.add('shake');
+      }
+      haptic(16);
+    }
+    function advance() {
+      const err = onbValidate(onb.step);
+      if (err) { showErr(err); return; }
+      clearErr();
+      if (onb.step === ONB_STEPS - 1) return finish();
+      onb.step++;
+      renderOnb();
+    }
+    function finish() {
+      const blocked = onbBlocked();
+      if (blocked) { showErr(blocked); renderOnb(); return; }
+      S.profile = {
+        name: onb.name.trim().slice(0, NAME_MAX),
+        gender: onb.gender,
+        birth: onb.birth,
+        height: onb.height,
+        skin: onb.skin.slice(),
+        concerns: onb.concerns.slice()
+      };
+      S.onboarded = true;
+      S.consent = { type: 'local-analysis', at: Date.now() };
+      save();
+      onb = null;
+      go('scan');
+    }
+
+    /* steps --------------------------------------------------------------- */
     if (onb.step === 0) {
+      const input = h('input', {
+        class: 'input', type: 'text', placeholder: 'Your first name', value: onb.name,
+        maxlength: String(NAME_MAX), autocomplete: 'given-name', enterkeyhint: 'next',
+        oninput: (e) => { onb.name = e.target.value; clearErr(); },
+        onkeydown: (e) => { if (e.key === 'Enter') advance(); }
+      });
       body.append(
-        h('div', { class: 'rise', style: { '--i': 0 } }, h('p', { class: 'eyebrow' }, 'Welcome')),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'Let\u2019s get your ', h('em', {}, 'baseline'), '.'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'Seven quick questions, then one scan. Everything stays on this device \u2014 there is no account and no server.'),
-        h('label', { class: 'field rise', style: { '--i': 3 } },
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Welcome'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'Let\u2019s get your ', h('em', {}, 'baseline'), '.'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'Seven quick questions, then one scan. Everything stays on this device \u2014 there is no account and no server.'),
+        h('label', { class: 'field ' + riseCls(3), style: rise(3) },
           h('span', { class: 'lab' }, 'What should we call you?'),
-          h('input', {
-            class: 'input', type: 'text', placeholder: 'Your first name', value: onb.name,
-            oninput: (e) => { onb.name = e.target.value; }
-          })),
-        h('p', { class: 'tiny rise', style: { '--i': 4, marginTop: '18px' } },
+          input,
+          h('span', { class: 'hint' }, '2\u2013' + NAME_MAX + ' characters')),
+        h('p', { class: 'tiny ' + riseCls(4), style: Object.assign({ marginTop: '18px' }, rise(4)) },
           'Lumorph is appearance guidance, not medical advice. It never diagnoses anything.')
       );
-      foot.append(next(() => { onb.step = 1; renderOnb(); }));
+      foot.append(nextBtn('Continue', advance));
+      setTimeout(() => { if (document.body.contains(input)) input.focus({ preventScroll: true }); }, first ? 520 : 260);
     }
 
     if (onb.step === 1) {
@@ -1820,94 +2124,147 @@ a { color: inherit; }
         { id: 'female', t: 'Female', s: 'Uses the female reference ranges' },
         { id: 'other', t: 'Other', s: 'Uses a blended range' }
       ];
-      body.append(
-        h('p', { class: 'eyebrow rise', style: { '--i': 0 } }, 'About you'),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'How should we ', h('em', {}, 'read'), ' your features?'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'Scores are measured against reference ranges, so this changes the yardstick \u2014 not the measurement.'),
-        h('div', { class: 'choices one mt-20' }, opts.map((o, i) => h('button', {
-          class: 'choice rise', style: { '--i': 3 + i }, 'aria-pressed': String(onb.gender === o.id),
-          onclick: () => { onb.gender = o.id; renderOnb(); }
+      const group = h('div', { class: 'choices one mt-20' });
+      opts.forEach((o, i) => {
+        group.append(h('button', {
+          class: 'choice ' + riseCls(3 + i), style: rise(3 + i),
+          dataset: { id: o.id }, 'aria-pressed': String(onb.gender === o.id),
+          onclick: (e) => {
+            onb.gender = o.id;
+            group.querySelectorAll('.choice').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === o.id)));
+            clearErr();
+          }
         }, h('span', { class: 'check' }, h('span', { html: I.check, style: { display: 'grid' } })),
-           h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s))))
+           h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s)));
+      });
+      body.append(
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'About you'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'How should we ', h('em', {}, 'read'), ' your features?'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'Scores are measured against reference ranges, so this changes the yardstick \u2014 not the measurement.'),
+        group
       );
-      foot.append(next(() => { onb.step = 2; renderOnb(); }));
+      foot.append(nextBtn('Continue', advance));
     }
 
     if (onb.step === 2) {
+      const min = new Date();
+      min.setFullYear(min.getFullYear() - 110);
+      const pill = h('p', { class: 'pill gold ' + (onb.birth ? '' : 'hide'), style: { marginTop: '14px' } },
+        onb.birth ? 'Age ' + ageFrom(onb.birth) : '');
+      const dateInput = h('input', {
+        class: 'input', type: 'date', value: onb.birth,
+        max: todayKey(), min: min.toISOString().slice(0, 10),
+        onchange: (e) => {
+          onb.birth = e.target.value;
+          const age = ageFrom(onb.birth);
+          pill.textContent = onb.birth ? 'Age ' + age : '';
+          pill.classList.toggle('hide', !onb.birth);
+          clearErr();
+        }
+      });
       body.append(
-        h('p', { class: 'eyebrow rise', style: { '--i': 0 } }, 'About you'),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'When were you ', h('em', {}, 'born'), '?'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'Age shifts what is normal for skin and structure. It is used for your plan, nothing else.'),
-        h('label', { class: 'field rise', style: { '--i': 3 } },
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'About you'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'When were you ', h('em', {}, 'born'), '?'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'Age shifts what is normal for skin and structure. It is used for your plan, nothing else.'),
+        h('label', { class: 'field ' + riseCls(3), style: rise(3) },
           h('span', { class: 'lab' }, 'Date of birth'),
-          h('input', {
-            class: 'input', type: 'date', value: onb.birth, max: todayKey(),
-            onchange: (e) => { onb.birth = e.target.value; renderOnb(); }
-          })),
-        onb.birth ? h('p', { class: 'pill gold rise', style: { '--i': 4, marginTop: '14px' } }, 'Age ' + ageFrom(onb.birth)) : null
+          dateInput,
+          h('span', { class: 'hint' }, 'You must be ' + MIN_AGE + ' or older to use Lumorph')),
+        pill
       );
-      foot.append(next(() => { onb.step = 3; renderOnb(); }));
+      foot.append(nextBtn('Continue', advance));
     }
 
     if (onb.step === 3) {
-      const hh = onb.unit === 'cm' ? onb.height : Math.round(onb.height / 2.54);
+      const shown = () => onb.unit === 'cm' ? Math.round(onb.height) : Math.round(onb.height / 2.54);
+      const valueEl = h('div', { class: 'display xl mono' }, String(shown()),
+        h('span', { class: 'small', style: { marginLeft: '8px' } }, onb.unit === 'cm' ? 'cm' : 'in'));
+      const slider = h('input', {
+        type: 'range', class: 'ruler',
+        min: onb.unit === 'cm' ? 120 : 48, max: onb.unit === 'cm' ? 230 : 91, value: shown(),
+        oninput: (e) => {
+          const v = Number(e.target.value);
+          onb.height = onb.unit === 'cm' ? v : Math.round(v * 2.54);
+          valueEl.firstChild.textContent = String(v);
+          clearErr();
+        }
+      });
+      const unitToggle = h('div', { class: 'segmented no-thumb mt-20 ' + riseCls(3), style: Object.assign({ maxWidth: '230px' }, rise(3)) });
+      [['cm', 'Centimetres'], ['ft', 'Inches']].forEach(([u, label]) => {
+        unitToggle.append(h('button', {
+          'aria-selected': String(onb.unit === u),
+          onclick: () => { onb.unit = u; renderOnb(); }
+        }, label));
+      });
       body.append(
-        h('p', { class: 'eyebrow rise', style: { '--i': 0 } }, 'About you'),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'How tall are ', h('em', {}, 'you'), '?'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'Framing advice depends on it. That is all it is used for.'),
-        h('div', { class: 'segmented no-thumb mt-20 rise', style: { '--i': 3, maxWidth: '220px' } },
-          ['cm', 'ft'].map((u) => h('button', {
-            'aria-selected': String(onb.unit === u),
-            onclick: () => { onb.unit = u; renderOnb(); }
-          }, u === 'cm' ? 'Centimetres' : 'Feet'))),
-        h('div', { class: 'center rise', style: { '--i': 4, marginTop: '34px' } },
-          h('div', { class: 'display xl mono' }, String(hh), h('span', { class: 'small', style: { marginLeft: '8px' } }, onb.unit === 'cm' ? 'cm' : 'in')),
-          h('input', {
-            type: 'range', min: onb.unit === 'cm' ? 140 : 55, max: onb.unit === 'cm' ? 210 : 83,
-            value: hh, style: { width: '100%', marginTop: '22px', accentColor: 'var(--gold)' },
-            oninput: (e) => {
-              const v = Number(e.target.value);
-              onb.height = onb.unit === 'cm' ? v : Math.round(v * 2.54);
-              $('.display.xl', body).firstChild.textContent = String(v);
-            }
-          }))
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'About you'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'How tall are ', h('em', {}, 'you'), '?'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'Framing advice depends on it. That is all it is used for.'),
+        unitToggle,
+        h('div', { class: 'center ' + riseCls(4), style: Object.assign({ marginTop: '30px' }, rise(4)) }, valueEl, slider)
       );
-      foot.append(next(() => { onb.step = 4; renderOnb(); }));
+      foot.append(nextBtn('Continue', advance));
     }
 
     if (onb.step === 4) {
-      body.append(
-        h('p', { class: 'eyebrow rise', style: { '--i': 0 } }, 'Your skin'),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'Which skin type ', h('em', {}, 'fits'), ' best?'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'Pick everything that applies. Your routine is built around this.'),
-        h('div', { class: 'choices mt-20' }, SKIN_TYPES.map((o, i) => h('button', {
-          class: 'choice rise', style: { '--i': 3 + i * 0.5 }, 'aria-pressed': String(onb.skin.includes(o.id)),
-          onclick: () => {
-            onb.skin = onb.skin.includes(o.id) ? onb.skin.filter((x) => x !== o.id) : [...onb.skin, o.id];
-            renderOnb();
+      const group = h('div', { class: 'choices mt-20' });
+      SKIN_TYPES.forEach((o, i) => {
+        group.append(h('button', {
+          class: 'choice ' + riseCls(3 + i * 0.4), style: rise(3 + i * 0.4),
+          dataset: { id: o.id }, 'aria-pressed': String(onb.skin.includes(o.id)),
+          onclick: (e) => {
+            const btn = e.currentTarget;
+            const has = onb.skin.includes(o.id);
+            onb.skin = has ? onb.skin.filter((x) => x !== o.id) : onb.skin.concat(o.id);
+            btn.setAttribute('aria-pressed', String(!has));
+            clearErr();
           }
         }, h('span', { class: 'check' }, h('span', { html: I.check, style: { display: 'grid' } })),
-           h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s))))
+           h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s)));
+      });
+      body.append(
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Your skin'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'Which skin type ', h('em', {}, 'fits'), ' best?'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'Pick everything that applies. Your routine is built around this.'),
+        group
       );
-      foot.append(next(() => { onb.step = 5; renderOnb(); }));
+      foot.append(nextBtn('Continue', advance));
     }
 
     if (onb.step === 5) {
-      body.append(
-        h('p', { class: 'eyebrow rise', style: { '--i': 0 } }, 'Your skin'),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'What do you want to ', h('em', {}, 'change'), '?'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'Your plan targets these. Pick up to three.'),
-        h('div', { class: 'choices mt-20' }, CONCERNS.map((o, i) => h('button', {
-          class: 'choice rise', style: { '--i': 3 + i * 0.5 }, 'aria-pressed': String(onb.concerns.includes(o.id)),
-          onclick: () => {
-            if (!onb.concerns.includes(o.id) && onb.concerns.length >= 3) { toast('Three targets is plenty'); return; }
-            onb.concerns = onb.concerns.includes(o.id) ? onb.concerns.filter((x) => x !== o.id) : [...onb.concerns, o.id];
-            renderOnb();
+      const group = h('div', { class: 'choices mt-20' });
+      CONCERNS.forEach((o, i) => {
+        group.append(h('button', {
+          class: 'choice ' + riseCls(3 + i * 0.4), style: rise(3 + i * 0.4),
+          dataset: { id: o.id }, 'aria-pressed': String(onb.concerns.includes(o.id)),
+          onclick: (e) => {
+            const btn = e.currentTarget;
+            const has = onb.concerns.includes(o.id);
+            if (!has && onb.concerns.length >= 3) { toast('Three targets is plenty'); return; }
+            onb.concerns = has ? onb.concerns.filter((x) => x !== o.id) : onb.concerns.concat(o.id);
+            btn.setAttribute('aria-pressed', String(!has));
+            clearErr();
           }
         }, h('span', { class: 'check' }, h('span', { html: I.check, style: { display: 'grid' } })),
-           h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s))))
+           h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s)));
+      });
+      body.append(
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Your skin'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'What do you want to ', h('em', {}, 'change'), '?'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'Your plan targets these. Pick up to three.'),
+        group
       );
-      foot.append(next(() => { onb.step = 6; renderOnb(); }));
+      foot.append(nextBtn('Continue', advance));
     }
 
     if (onb.step === 6) {
@@ -1918,41 +2275,34 @@ a { color: inherit; }
         ['Phone at eye level', 'Hold it straight in front of you, at arm\u2019s length.']
       ];
       body.append(
-        h('p', { class: 'eyebrow rise', style: { '--i': 0 } }, 'Your first scan'),
-        h('h1', { class: 'display lg rise', style: { '--i': 1, marginTop: '10px' } }, 'How to take a ', h('em', {}, 'good'), ' scan'),
-        h('p', { class: 'lede rise', style: { '--i': 2 } }, 'This scan is the baseline every later scan is compared with.'),
-        h('div', { class: 'card mt-20 rise', style: { '--i': 3 } },
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Your first scan'),
+        h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
+          'How to take a ', h('em', {}, 'good'), ' scan'),
+        h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
+          'This scan is the baseline every later scan is compared with.'),
+        h('div', { class: 'card mt-20 ' + riseCls(3), style: rise(3) },
           tips.map((t, i) => h('div', { class: 'row gap-12', style: { padding: '11px 0', borderTop: i ? '1px solid var(--line)' : 'none' } },
-            h('div', { class: 'pill gold', style: { width: '26px', height: '26px', padding: '0', justifyContent: 'center', flex: '0 0 auto' } }, String(i + 1)),
+            h('div', { class: 'pill gold num-badge' }, String(i + 1)),
             h('div', {}, h('div', { style: { fontSize: '13.5px', fontWeight: '600' } }, t[0]),
               h('div', { class: 'small' }, t[1]))))),
-        h('div', { class: 'card mt-16 rise', style: { '--i': 4 } },
+        h('div', { class: 'card mt-16 ' + riseCls(4), style: rise(4) },
           h('div', { class: 'row gap-10', style: { marginBottom: '8px' } },
             h('span', { html: I.shield, style: { width: '18px', height: '18px', color: 'var(--gold)', display: 'grid' } }),
             h('span', { style: { fontSize: '13.5px', fontWeight: '600' } }, 'Where your photo goes')),
-          h('p', { class: 'small' }, 'Nowhere. The scan runs in this browser tab, the measurements never leave the device, and the photo is kept in this browser\u2019s own storage so you can see your history. No upload, no account, no third party.')),
+          h('p', { class: 'small' }, 'Nowhere. The scan runs in this browser tab, the measurements never leave the device, and the photo is kept in this browser\u2019s own storage so you can see your history. No upload, no account, no third party.'))
       );
-      foot.append(h('button', {
-        class: 'btn primary',
-        onclick: () => {
-          S.profile = {
-            name: (onb.name || 'Friend').trim().slice(0, 24),
-            gender: onb.gender || 'other',
-            birth: onb.birth || '',
-            height: onb.height || 175,
-            skin: onb.skin.length ? onb.skin : ['balanced'],
-            concerns: onb.concerns.length ? onb.concerns : ['maintenance']
-          };
-          S.onboarded = true;
-          S.consent = { type: 'local-analysis', at: Date.now() };
-          save();
-          go('scan');
-        }
-      }, h('span', { html: I.camera, style: { width: '18px', height: '18px', display: 'grid' } }), 'Take my first scan'));
+      foot.append(nextBtn('Take my first scan', advance, I.camera));
     }
 
     view.append(wrap);
-    reveal(view);
+    if (first) reveal(view);
+    onb.seenAnim = true;
+  }
+
+  function nextBtn(label, onTap, icon) {
+    return h('button', { class: 'btn primary', onclick: onTap },
+      icon ? h('span', { html: icon, style: { width: '18px', height: '18px', display: 'grid' } }) : null,
+      label);
   }
 
   function ageFrom(birth) {
@@ -1987,7 +2337,7 @@ a { color: inherit; }
       days.push({
         d: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()],
         n: d.getDate(),
-        done: Object.values(qq).some(Boolean),
+        done: QUESTS.some((x) => qq[x.id]),
         today: i === 0
       });
     }
@@ -2004,7 +2354,7 @@ a { color: inherit; }
         h('div', { class: 'day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') },
           h('span', { class: 'd' }, d.d), h('span', { class: 'n' }, String(d.n)), h('span', { class: 'mark' })))),
 
-      h('p', { class: 'small mt-12 rise', style: { '--i': 2 } },
+      h('p', { class: 'small mt-12 rise day-line', style: { '--i': 2 } },
         done === 0 ? 'Nothing yet today \u2014 clear a quest or take a scan.' : done + ' of 6 cleared today. Keep going.'),
 
       /* focus card */
@@ -2052,13 +2402,13 @@ a { color: inherit; }
       h('div', { class: 'card mt-16 rise', style: { '--i': 6 } },
         h('div', { class: 'card-h' },
           h('div', { class: 'eyebrow' }, 'Today \u00b7 daily quests'),
-          h('div', { class: 'small' }, done + '/6')),
+          h('div', { class: 'small quest-count' }, done + '/6')),
         h('div', {}, QUESTS.map((q2) => questRow(q2, q))),
         h('div', { class: 'row between mt-16', style: { paddingTop: '14px', borderTop: '1px solid var(--line)' } },
           h('div', {},
-            h('div', { class: 'small' }, rk.next ? rk.next.at - S.xp + ' XP to ' + rk.next.name : 'Top rank reached'),
-            h('div', { class: 'bar thin mt-8', style: { width: '150px', '--w': rk.pct } }, h('i', {}))),
-          h('div', { class: 'display sm mono' }, String(S.xp) + ' XP')),
+            h('div', { class: 'small xp-next' }, rk.next ? rk.next.at - S.xp + ' XP to ' + rk.next.name : 'Top rank reached'),
+            h('div', { class: 'bar thin mt-8 xp-bar', style: { width: '150px', '--w': rk.pct } }, h('i', {}))),
+          h('div', { class: 'display sm mono' }, h('span', { class: 'xp-total' }, String(S.xp)), ' XP')),
 
       h('p', { class: 'tiny center mt-20 rise', style: { '--i': 7 } },
         'Appearance guidance only. Not medical advice, and never a diagnosis.'))
@@ -2082,7 +2432,7 @@ a { color: inherit; }
 
   function questRow(q2, q) {
     const on = !!q[q2.id];
-    return h('div', { class: 'quest' + (on ? ' done' : ''), onclick: () => toggleQuest(q2) },
+    return h('div', { class: 'quest' + (on ? ' done' : ''), onclick: (e) => toggleQuest(q2, e.currentTarget) },
       h('span', { class: 'tick' }, h('span', { html: I.check, style: { display: 'grid' } })),
       h('div', { class: 'grow' },
         h('div', { class: 't' }, q2.label),
@@ -2090,18 +2440,38 @@ a { color: inherit; }
       h('span', { class: 'xp' }, '+' + q2.xp));
   }
 
-  function toggleQuest(q2) {
+  function toggleQuest(q2, rowEl) {
     const q = dayQuests();
+    const before = S.xp;
     const on = !q[q2.id];
     q[q2.id] = on;
     S.xp = Math.max(0, S.xp + (on ? q2.xp : -q2.xp));
     const done = QUESTS.filter((x) => q[x.id]).length;
-    if (done === 4 && !q._bonus) { q._bonus = true; S.xp += 25; toast('Four cleared \u2014 +25 bonus XP'); }
+    if (done >= 4 && !q._bonus) { q._bonus = true; S.xp += 25; toast('Four cleared \u2014 +25 bonus XP'); }
     else if (done < 4 && q._bonus) { q._bonus = false; S.xp -= 25; }
     else if (on) toast('+' + q2.xp + ' XP');
     save();
     haptic(on ? 10 : 6);
-    go('home');
+
+    /* update the screen in place: no re-render, no scroll jump, no replayed animation */
+    if (rowEl) {
+      rowEl.classList.toggle('done', on);
+      const sub = rowEl.querySelector('.tiny');
+      if (sub) sub.textContent = on ? 'Cleared' : 'Tap to clear';
+    }
+    const count = view.querySelector('.quest-count');
+    if (count) count.textContent = done + '/6';
+    const line = view.querySelector('.day-line');
+    if (line) line.textContent = done === 0
+      ? 'Nothing yet today \u2014 clear a quest or take a scan.'
+      : done + ' of 6 cleared today. Keep going.';
+    const xpEl = view.querySelector('.xp-total');
+    if (xpEl) animateNumber(xpEl, S.xp, { from: before, dp: 0, dur: 620 });
+    const rk = rankOf(S.xp);
+    const bar = view.querySelector('.xp-bar');
+    if (bar) bar.style.setProperty('--w', rk.pct);
+    const nextLbl = view.querySelector('.xp-next');
+    if (nextLbl) nextLbl.textContent = rk.next ? (rk.next.at - S.xp) + ' XP to ' + rk.next.name : 'Top rank reached';
   }
 
   /* ---------- progress ---------- */
@@ -2189,7 +2559,7 @@ a { color: inherit; }
     const m = new Date().getMonth();
     return Object.keys(S.quests).filter((k) => {
       const d = new Date(k);
-      return d.getMonth() === m && Object.values(S.quests[k]).some(Boolean);
+      return d.getMonth() === m && QUESTS.some((x) => S.quests[k][x.id]);
     }).length;
   }
   function bigStat(v, label) {
@@ -2207,7 +2577,7 @@ a { color: inherit; }
       d.setDate(start.getDate() + i);
       const k = todayKey(d);
       const q = S.quests[k] || {};
-      const done = Object.values(q).filter(Boolean).length;
+      const done = QUESTS.filter((x) => q[x.id]).length;
       let cls = '';
       if (d > today) cls = '';
       else if (done === 0) cls = 'frozen';
@@ -2357,12 +2727,20 @@ a { color: inherit; }
       }
     }
 
+    const chipEls = {};
+    [['face', 'Face'], ['angle', 'Angle'], ['light', 'Light'], ['focus', 'Focus']].forEach(([id, label]) => {
+      const el = h('span', { class: 'qchip' }, h('span', { class: 'd' }), label);
+      chipEls[id] = el;
+      chips.append(el);
+    });
+
     function updateLive() {
       const vw = video.videoWidth || 1080, vh = video.videoHeight || 1440;
-      const q = E.quality(cam.lm, vw, vh);
-      chips.innerHTML = '';
-      q.chips.forEach((c) => chips.append(h('span', { class: 'qchip' + (c.ok ? ' ok' : '') },
-        h('span', { class: 'd' }), c.label)));
+      const q = E.quality(cam.lm, vw, vh, video);
+      Object.keys(chipEls).forEach((id) => {
+        const c = (q.chips || []).find((x) => x.id === id);
+        chipEls[id].classList.toggle('ok', !!(c && c.ok));
+      });
       oval.classList.toggle('ok', q.ok);
       hint.textContent = q.message;
       captureBtn.disabled = !q.ok;
@@ -2582,7 +2960,7 @@ a { color: inherit; }
         })),
       h('div', { class: 'mt-20 rise', style: { '--i': 2 } },
         h('h2', { class: 'display sm', style: { marginBottom: '10px' } }, 'Where to focus'),
-        h('div', { class: 'list' }, scan.focus.map((f) => h('div', { class: 'item' },
+        h('div', { class: 'list' }, (scan.focus || []).map((f) => h('div', { class: 'item' },
           h('span', { class: 'ico' }, h('span', { html: I.bolt, style: { width: '16px', height: '16px', display: 'grid' } })),
           h('div', { class: 'txt' },
             h('div', { class: 't' }, f.label),
@@ -2888,9 +3266,18 @@ a { color: inherit; }
     if (meta) meta.setAttribute('content', t === 'light' ? '#F6F3EC' : '#07070A');
   }
 
+  if (window.matchMedia) {
+    try {
+      window.matchMedia('(prefers-color-scheme: light)')
+        .addEventListener('change', () => { if (S.theme === 'system') applyTheme(); });
+    } catch (e) { /* older browser */ }
+  }
+
   /* ---------------- demo seed ---------------- */
   function seedDemo() {
+    const keepTheme = S.theme;
     S = blank();
+    S.theme = keepTheme;
     S.onboarded = true;
     S.profile = { name: 'Soham', gender: 'male', birth: '2001-11-18', height: 178, skin: ['balanced', 'oily'], concerns: ['clarity', 'definition', 'eyes'] };
     S.consent = { type: 'local-analysis', at: Date.now() };
