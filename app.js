@@ -84,7 +84,9 @@
     table: SVG('<rect x="3.6" y="5" width="16.8" height="14" rx="2.2"/><path d="M3.6 10h16.8"/><path d="M9.6 10v9"/>'),
     image: SVG('<rect x="3.6" y="5.2" width="16.8" height="13.6" rx="2.4"/><circle cx="8.7" cy="10" r="1.3"/><path d="M4.6 17.2l4.5-4.3 3.2 2.8 3-2.5 4.1 3.6"/>'),
     flip: SVG('<path d="M12 3.6v16.8"/><path d="M9.2 6.6 4.6 12l4.6 5.4z"/><path d="M14.8 6.6 19.4 12l-4.6 5.4z"/>'),
-    clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>')
+    clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>'),
+    pencil: SVG('<path d="M4.6 19.4l.9-4.2L15.9 4.8a2 2 0 0 1 2.8 0l.5.5a2 2 0 0 1 0 2.8L8.8 18.5z"/><path d="M14.6 6.1l3.3 3.3"/>'),
+    target: SVG('<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>')
   };
 
   /* ---------------- store ---------------- */
@@ -281,6 +283,39 @@
     if (name !== route) go(name, { fromHistory: true });
   });
 
+  function positionTabGlow() {
+    const inner = tabbar.querySelector('.inner');
+    if (!inner) return;
+    const glow = inner.querySelector('.glow');
+    const btn = inner.querySelector('button.active');
+    if (!glow) return;
+    if (!btn) { glow.style.width = '0px'; glow.style.opacity = '0'; return; }
+    const ir = inner.getBoundingClientRect();
+    const br = btn.getBoundingClientRect();
+    const border = inner.clientLeft || 0;
+    glow.style.opacity = '1';
+    glow.style.width = Math.max(0, br.width - 8) + 'px';
+    glow.style.transform = 'translate3d(' + (br.left - ir.left - border + 4) + 'px,0,0)';
+  }
+
+  function repaintThumbs() {
+    positionTabGlow();
+    document.querySelectorAll('.segmented').forEach((seg) => {
+      const thumb = seg.querySelector('.thumb');
+      const btn = seg.querySelector('button[aria-selected="true"]');
+      if (!thumb || !btn) return;
+      const sr = seg.getBoundingClientRect();
+      const br = btn.getBoundingClientRect();
+      const border = seg.clientLeft || 0;
+      thumb.style.width = br.width + 'px';
+      thumb.style.transform = 'translate3d(' + (br.left - sr.left - border - 4) + 'px,0,0)';
+    });
+  }
+
+  window.addEventListener('resize', repaintThumbs);
+  window.addEventListener('orientationchange', () => setTimeout(repaintThumbs, 260));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(repaintThumbs).catch(() => {});
+
   function paintTopbar(name) {
     if (name === 'home') {
       topbar.append(
@@ -325,13 +360,8 @@
     inner.append(scan);
     tabbar.append(inner);
 
-    raf(() => {
-      const btn = inner.querySelector('button.active');
-      if (!btn) { glow.style.width = '0px'; glow.style.opacity = '0'; return; }
-      glow.style.opacity = '1';
-      glow.style.width = btn.offsetWidth - 8 + 'px';
-      glow.style.transform = `translate3d(${btn.offsetLeft + 4}px,0,0)`;
-    });
+    raf(positionTabGlow);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(positionTabGlow).catch(() => {});
   }
 
   /* ============================================================
@@ -1512,15 +1542,15 @@
       h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 3 } }, 'Skin'),
       h('div', { class: 'card mt-12 rise', style: { '--i': 4 } },
         h('div', { class: 'item', style: { padding: '6px 0' } },
-          h('span', { class: 'ico' }, h('span', { html: I.drop, style: { width: '16px', height: '16px', display: 'grid' } })),
+          h('span', { class: 'ico' }, h('span', { html: I.drop, style: { width: '18px', height: '18px', display: 'grid' } })),
           h('div', { class: 'txt' }, h('div', { class: 't' }, t || 'Balanced'), h('div', { class: 's' }, 'Skin type'))),
         h('div', { class: 'item', style: { padding: '6px 0' } },
-          h('span', { class: 'ico' }, h('span', { html: I.sparkle, style: { width: '16px', height: '16px', display: 'grid' } })),
+          h('span', { class: 'ico' }, h('span', { html: I.target, style: { width: '18px', height: '18px', display: 'grid' } })),
           h('div', { class: 'txt' }, h('div', { class: 't' }, c || 'General maintenance'), h('div', { class: 's' }, 'Focus')))),
 
       h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 5 } }, 'Account'),
       h('div', { class: 'card mt-12 rise', style: { '--i': 6 } },
-        linkRow('Edit name', 'Change what the app calls you', I.gear, () => editName()),
+        linkRow('Edit name', 'Change what the app calls you', I.pencil, () => editName()),
         linkRow('Settings & privacy', 'Appearance, data, export', I.gear, () => go('settings')),
         linkRow('How scores work', 'The full rubric, in plain language', I.info, () => go('how'))),
       h('p', { class: 'tiny center mt-20 rise', style: { '--i': 7 } },
