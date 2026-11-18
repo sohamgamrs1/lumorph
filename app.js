@@ -8,6 +8,8 @@
   const E = window.LumorphEngine;
   const I18N = window.LumorphI18n;
   const T = (s) => (I18N ? I18N.t(s) : s);
+  const num = (v, dp, suffix) => (v == null || !isFinite(v)) ? '\u2014' : Number(v).toFixed(dp == null ? 1 : dp) + (suffix || '');
+  const txt = (v, fallback) => (v == null || v === '' || v === 'null' || v === 'undefined') ? (fallback == null ? '\u2014' : fallback) : v;
   const $ = (s, r) => (r || document).querySelector(s);
   const app = $('#app');
   const view = $('#view');
@@ -804,7 +806,7 @@
         h('div', { class: 'row between' },
           h('div', {},
             h('p', { class: 'eyebrow' }, T('Welcome back')),
-            h('h1', { class: 'display lg', style: { marginTop: '6px' } }, greet + ', ', h('em', {}, S.profile.name))),
+            h('h1', { class: 'display lg', style: { marginTop: '6px' } }, greet + ', ', h('em', {}, txt(S.profile.name, 'you')))),
           h('div', { class: 'pill gold' }, h('span', { class: 'dot' }), rk.name))),
 
       h('div', { class: 'week mt-20 rise', style: { '--i': 1 } }, days.map((d) =>
@@ -1140,9 +1142,11 @@
     </svg>`;
 
   const GUIDE_SIDE = `<svg viewBox="0 0 200 280" preserveAspectRatio="xMidYMid meet">
-      <ellipse class="guide-soft" cx="104" cy="140" rx="60" ry="94"/>
-      <path class="guide-main" d="M104 32c34 0 56 22 56 52 0 16-6 26-2 38 4 13-2 20 6 30 10 12 4 30-14 40-12 6-26 8-38 6-22-4-38-20-38-42 0-14 4-22 8-34 6-16 6-28 6-42 0-26 8-48 16-48z"/>
-      <path class="guide-tick" d="M104 32v-12M104 248v12"/>
+      <ellipse class="guide-main" cx="100" cy="140" rx="58" ry="92"/>
+      <path class="guide-soft" d="M56 96q44-16 88 0"/>
+      <path class="guide-tick" d="M100 34v-12M100 246v12"/>
+      <path class="guide-arrow" d="M70 150c0 26 22 46 50 44"/>
+      <path class="guide-arrow" d="M112 186l9 8-9 9"/>
     </svg>`;
 
   function guideMarkup(step) {
@@ -1216,7 +1220,9 @@
       }
       const ctx = meshCanvas.getContext('2d');
       ctx.clearRect(0, 0, W, H);
+      const vw = video.videoWidth || W, vh = video.videoHeight || H;
       drawMesh(ctx, cam.lm, W, H, {
+        map: coverMap(vw, vh, W, H),
         lines: cam.meshLines || E.MESH_LINES,
         stroke: 'rgba(234,213,162,0.45)',
         dot: 'rgba(255,246,223,0.75)',
@@ -1228,7 +1234,7 @@
     function updateLive() {
       const vw = video.videoWidth || 1080, vh = video.videoHeight || 1440;
       paintMesh();
-      const q = E.quality(cam.lm, vw, vh, video);
+      const q = E.quality(cam.lm, vw, vh, video, flow.step === 1 ? 'side' : 'front');
       Object.keys(chipEls).forEach((id) => {
         const c = (q.chips || []).find((x) => x.id === id);
         chipEls[id].classList.toggle('ok', !!(c && c.ok));
@@ -1245,7 +1251,7 @@
       stepPill.append(h('span', { class: 'dot' }), (n === 0 ? '1 of 2 \u00b7 ' + T('Front') : '2 of 2 \u00b7 ' + T('Side')));
       skipSide.classList.toggle('hide', n === 0);
       if (n === 1) {
-        hint.textContent = 'Turn your head to the side, chin level.';
+        hint.textContent = 'Turn about halfway \u2014 not all the way to a profile.';
         shutter.disabled = !flow.demo;
       }
     }
@@ -1293,8 +1299,7 @@
 
     function capture() {
       if (flow.demo) {
-        const lm = E.demoMesh(Math.floor(Math.random() * 9999) + 3);
-        takeShot(null, lm, 1080, 1440);
+        takeShot(null, E.demoLandmarks(Math.floor(Math.random() * 9999) + 3), 1080, 1440);
         return;
       }
       if (!cam.lm || !cam.stream) { toast('No face detected yet'); return; }
@@ -1305,8 +1310,20 @@
       const ctx = cv.getContext('2d');
       if (flipped) { ctx.translate(vw, 0); ctx.scale(-1, 1); }
       ctx.drawImage(video, 0, 0, vw, vh);
-      const pts = flipped ? cam.lm.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })) : cam.lm;
-      takeShot(cv, pts, vw, vh);
+      let pts = flipped ? cam.lm.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })) : cam.lm;
+
+      // re-read the landmarks from this exact frame, so a moving head cannot
+      // leave the mesh lagging behind the photo that gets saved
+      (async () => {
+        try {
+          const lmk = await ensureLandmarker();
+          await lmk.setOptions({ runningMode: 'IMAGE' });
+          const res = lmk.detect(cv);
+          await lmk.setOptions({ runningMode: 'VIDEO' });
+          if (res.faceLandmarks && res.faceLandmarks[0]) pts = res.faceLandmarks[0];
+        } catch (e) { /* keep the live points */ }
+        takeShot(cv, pts, vw, vh);
+      })();
     }
 
     function takeShot(source, lm, w, h) {
@@ -1452,6 +1469,7 @@
         metrics,
         side,
         lm: E.encodeLandmarks(f.lm),
+        demo: !f.source && /demo=1/.test(location.search),
         quality: { ok: quality.ok, chips: (quality.chips || []).map((c) => ({ id: c.id, label: c.label, ok: c.ok })) },
         thumb
       };
@@ -1567,14 +1585,14 @@
       scan.side ? h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
         h('div', { class: 'card-h' },
           h('div', { class: 'eyebrow' }, 'Side profile \u00b7 beta'),
-          h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } }, scan.side.score.toFixed(1))),
+          h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } }, num(scan.side.score, 1))),
         h('p', { class: 'small' }, 'Read from your side photo. Approximate by nature, and not counted in your overall score.'),
         h('div', { class: 'row between mt-12' },
           h('span', { class: 'small' }, 'Jaw line'),
-          h('span', { class: 'display sm mono' }, scan.side.jawline.toFixed(1) + '\u00b0')),
+          h('span', { class: 'display sm mono' }, num(scan.side.jawline, 1, '\u00b0'))),
         h('div', { class: 'row between mt-8' },
           h('span', { class: 'small' }, 'Chin projection'),
-          h('span', { class: 'display sm mono' }, scan.side.projection.toFixed(1) + '\u00b0'))) : null,
+          h('span', { class: 'display sm mono' }, num(scan.side.projection, 1, '\u00b0')))) : null,
 
       h('div', { class: 'mt-20 rise', style: { '--i': 3 } },
         h('h2', { class: 'display sm', style: { marginBottom: '10px' } }, T('Where to focus')),
@@ -1666,10 +1684,18 @@
   }
 
   /* ---------- landmark mesh ---------- */
+  function coverMap(vw, vh, pw, ph) {
+    const scale = Math.max(pw / vw, ph / vh);
+    const dw = vw * scale, dh = vh * scale;
+    return { dx: (pw - dw) / 2, dy: (ph - dh) / 2, dw, dh };
+  }
+
   function drawMesh(ctx, lm, W, H, opts) {
     const o = opts || {};
     if (!lm) return;
     const lines = o.lines || E.MESH_LINES;
+    const mx = (p) => (o.map ? o.map.dx + p.x * o.map.dw : p.x * W);
+    const my = (p) => (o.map ? o.map.dy + p.y * o.map.dh : p.y * H);
     ctx.save();
     ctx.strokeStyle = o.stroke || 'rgba(234,213,162,0.55)';
     ctx.lineWidth = o.lineWidth || 1;
@@ -1679,7 +1705,7 @@
       for (let i = 0; i < line.length; i++) {
         const p = lm[line[i]];
         if (!p) continue;
-        const x = p.x * W, y = p.y * H;
+        const x = mx(p), y = my(p);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
     }
@@ -1697,7 +1723,7 @@
           const p = lm[id];
           if (!p) continue;
           ctx.beginPath();
-          ctx.arc(p.x * W, p.y * H, r, 0, Math.PI * 2);
+          ctx.arc(mx(p), my(p), r, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -1711,36 +1737,46 @@
       idx.forEach((i) => {
         const p = lm[i];
         if (!p) return;
-        ctx.fillText(String(i), p.x * W, p.y * H - 6);
+        ctx.fillText(String(i), mx(p), my(p) - 6);
       });
     }
     ctx.restore();
   }
 
   function openMesh(scan) {
-    const lm = E.decodeLandmarks(scan.lm);
+    const lm = scan.demo ? E.demoMesh(7) : E.decodeLandmarks(scan.lm);
     if (!lm) { toast('No landmark data on this scan'); return; }
 
     const cv = h('canvas', { class: 'metric-canvas' });
     let showIdx = false;
 
     const paint = () => {
-      const W = 700, H = 900;
-      cv.width = W; cv.height = H;
-      const ctx = cv.getContext('2d');
-      ctx.fillStyle = '#0B0B10';
-      ctx.fillRect(0, 0, W, H);
+      const W = 700;
+      const finish = (H, img) => {
+        cv.width = W; cv.height = H;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#0B0B10';
+        ctx.fillRect(0, 0, W, H);
+        if (img) {
+          ctx.drawImage(img, 0, 0, W, H);
+          ctx.fillStyle = 'rgba(7,7,10,0.22)';
+          ctx.fillRect(0, 0, W, H);
+        }
+        drawMesh(ctx, lm, W, H, {
+          indices: showIdx, lineWidth: 1.2, dotSize: 1.6,
+          stroke: img ? 'rgba(234,213,162,0.55)' : 'rgba(234,213,162,0.7)'
+        });
+      };
       if (scan.thumb) {
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, 0, 0, W, H);
-          ctx.fillStyle = 'rgba(7,7,10,0.25)';
-          ctx.fillRect(0, 0, W, H);
-          drawMesh(ctx, lm, W, H, { indices: showIdx, lineWidth: 1.1, dotSize: 1.5 });
+          const H = Math.round(W * (img.naturalHeight / img.naturalWidth)) || 900;
+          finish(H, img);
         };
+        img.onerror = () => finish(900, null);
         img.src = scan.thumb;
       } else {
-        drawMesh(ctx, lm, W, H, { indices: showIdx, lineWidth: 1.4, dotSize: 1.8, stroke: 'rgba(234,213,162,0.7)' });
+        finish(900, null);
       }
     };
     paint();
@@ -2028,7 +2064,7 @@
     body.append(
       h('div', { class: 'metric-read' },
         h('span', { class: 'big' }, d.score.toFixed(1)),
-        h('span', { class: 'small' }, T('out of 10') + ' \u00b7 ' + d.valueLabel)),
+        h('span', { class: 'small' }, T('out of 10') + ' \u00b7 ' + txt(d.valueLabel, ''))),
       h('p', { class: 'small mt-12' }, d.tip || ''),
       h('button', { class: 'btn ghost mt-20', onclick: closeSheet }, 'Close')
     );
@@ -2146,7 +2182,7 @@
     ctx.fillStyle = 'rgba(246,241,231,0.75)';
     ctx.font = '500 18px ' + SANS;
     ctx.fillText(new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }), W - pad, 120);
-    if (S.profile) ctx.fillText(S.profile.name, W - pad, 152);
+    if (S.profile && S.profile.name) ctx.fillText(String(S.profile.name), W - pad, 152);
     ctx.textAlign = 'left';
 
     // score block
@@ -2302,7 +2338,7 @@
       h('div', { class: 'center mt-12 rise', style: { '--i': 0 } },
         h('div', { style: { width: '92px', height: '92px', margin: '0 auto', borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #FFF4D8, var(--gold) 45%, var(--gold-2) 85%)', display: 'grid', placeItems: 'center', fontFamily: 'var(--serif)', fontSize: '34px', color: '#171308' } },
           (S.profile.name || 'L')[0].toUpperCase()),
-        h('h1', { class: 'display md', style: { marginTop: '14px' } }, S.profile.name),
+        h('h1', { class: 'display md', style: { marginTop: '14px' } }, txt(S.profile.name, 'You')),
         h('div', { class: 'row gap-8', style: { justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' } },
           h('span', { class: 'pill gold' }, 'Free forever'),
           h('span', { class: 'pill plain' }, 'Rank: ' + rk.name),
@@ -2314,7 +2350,7 @@
         h('div', { class: 'row between' },
           kv(T('Gender'), (S.profile.gender || '\u2014').replace(/^./, (m) => m.toUpperCase())),
           kv(T('Age'), S.profile.birth ? String(ageFrom(S.profile.birth)) : '\u2014'),
-          kv(T('Height'), S.profile.height + ' cm'))),
+          kv(T('Height'), S.profile.height ? S.profile.height + ' cm' : '\u2014'))),
 
       h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 3 } }, T('Skin')),
       h('div', { class: 'card mt-12 rise', style: { '--i': 4 } },

@@ -424,63 +424,78 @@
     };
   }
 
+  /* A metric scores 10 only at the ideal centre and falls away smoothly on both
+     sides, so "inside the band" is not the same as "good". Deviation metrics
+     (symmetry, thirds, fifths) peak at zero. */
+  const K = 0.7;
+  function peak(v, lo, hi, k) {
+    const mid = (lo + hi) / 2;
+    const half = Math.max((hi - lo) / 2, 1e-6);
+    const t = (v - mid) / half;
+    return 10 * Math.exp(-(k == null ? K : k) * t * t);
+  }
+  function flat(v, scale, k) {
+    const t = Math.abs(v) / Math.max(scale, 1e-6);
+    return 10 * Math.exp(-(k == null ? K : k) * t * t);
+  }
+
   const METRICS = [
     { id: 'symmetry', label: 'Symmetry', pillar: 'harmony', fmt: (v) => (v * 100).toFixed(1) + '%',
-      score: (v) => band(v, 0, 0.012, 0.085), tip: 'Asymmetry is mostly light and camera angle. Shoot straight-on, at eye level, in even light.' },
+      score: (v) => flat(v, 0.085), tip: 'Asymmetry is mostly light and camera angle. Shoot straight-on, at eye level, in even light.' },
     { id: 'thirdsDev', label: 'Facial thirds', pillar: 'harmony', fmt: (v) => (v * 100).toFixed(1) + '% dev',
-      score: (v) => band(v, 0, 0.02, 0.055), tip: 'Thirds shift with head tilt. A level chin is worth more than any product.' },
+      score: (v) => flat(v, 0.055), tip: 'Thirds shift with head tilt. A level chin is worth more than any product.' },
     { id: 'fifthsDev', label: 'Facial fifths', pillar: 'harmony', fmt: (v) => (v * 100).toFixed(1) + '% dev',
-      score: (v) => band(v, 0, 0.045, 0.08), tip: 'Width balance is fixed structure. What you control is hair volume at the sides.' },
+      score: (v) => flat(v, 0.08), tip: 'Width balance is fixed structure. What you control is hair volume at the sides.' },
     { id: 'ipdRatio', label: 'Eye spacing', pillar: 'harmony', fmt: (v) => v.toFixed(3),
-      score: (v) => band(v, 0.43, 0.49, 0.07), tip: 'Fixed. Frames and brow shape change how this reads more than anything else.' },
+      score: (v) => peak(v, 0.43, 0.49), tip: 'Fixed. Frames and brow shape change how this reads more than anything else.' },
     { id: 'midfaceRatio', label: 'Midface ratio', pillar: 'harmony', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 0.94, 1.16, 0.34), tip: 'Hairline and brow shape change the perceived midface more than the midface changes.' },
+      score: (v) => peak(v, 0.94, 1.16), tip: 'Hairline and brow shape change the perceived midface more than the midface changes.' },
 
     { id: 'jawCheek', label: 'Jaw to cheek width', pillar: 'angularity', fmt: (v) => v.toFixed(2),
-      score: (v, b) => band(v, b.jawCheek[0], b.jawCheek[1], 0.12), tip: 'Body fat and neck posture move this more than any mewing myth. Train, sleep, stand tall.' },
+      score: (v, b) => peak(v, b.jawCheek[0], b.jawCheek[1]), tip: 'Body fat and neck posture move this more than any mewing myth. Train, sleep, stand tall.' },
     { id: 'gonialAngle', label: 'Gonial angle', pillar: 'angularity', fmt: (v) => v.toFixed(0) + '\u00b0',
-      score: (v, b) => band(v, b.gonial[0], b.gonial[1], 14), tip: 'Partly fixed. Chewing hard food and keeping your tongue on the palate is the honest advice.' },
+      score: (v, b) => peak(v, b.gonial[0], b.gonial[1]), tip: 'Partly fixed. Chewing hard food and keeping your tongue on the palate is the honest advice.' },
     { id: 'chinWidth', label: 'Chin width', pillar: 'angularity', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 0.16, 0.27, 0.08), tip: 'Facial hair is the fastest lever here: a defined chin line reads wider immediately.' },
+      score: (v) => peak(v, 0.16, 0.27), tip: 'Facial hair is the fastest lever here: a defined chin line reads wider immediately.' },
 
     { id: 'browHeight', label: 'Brow prominence', pillar: 'dimorphism', fmt: (v) => v.toFixed(2),
-      score: (v, b) => band(v, b.browHeight[0], b.browHeight[1], 0.14), tip: 'Brow grooming changes this in minutes. Keep the natural line, clean the strays.' },
+      score: (v, b) => peak(v, b.browHeight[0], b.browHeight[1]), tip: 'Brow grooming changes this in minutes. Keep the natural line, clean the strays.' },
     { id: 'lipFullness', label: 'Lip fullness', pillar: 'dimorphism', fmt: (v) => v.toFixed(2),
-      score: (v, b) => band(v, b.lipFullness[0], b.lipFullness[1], 0.14), tip: 'Hydration and a lip balm with SPF do more than any product marketed at you.' },
+      score: (v, b) => peak(v, b.lipFullness[0], b.lipFullness[1]), tip: 'Hydration and a lip balm with SPF do more than any product marketed at you.' },
     { id: 'midfaceWidth', label: 'Cheekbone width', pillar: 'dimorphism', fmt: (v) => v.toFixed(2),
-      score: (v, b) => band(v, b.midfaceWidth[0], b.midfaceWidth[1], 0.14), tip: 'Cheekbone definition follows body composition. Leaner face, more visible bone.' },
+      score: (v, b) => peak(v, b.midfaceWidth[0], b.midfaceWidth[1]), tip: 'Cheekbone definition follows body composition. Leaner face, more visible bone.' },
 
     { id: 'canthalTilt', label: 'Canthal tilt', pillar: 'features', fmt: (v) => v.toFixed(1) + '\u00b0',
-      score: (v) => band(v, 1.5, 9, 8), tip: 'Fixed anatomy. Sleep and hydration decide whether your eyes look tired or awake.' },
+      score: (v) => peak(v, 1.5, 9), tip: 'Fixed anatomy. Sleep and hydration decide whether your eyes look tired or awake.' },
     { id: 'eyeAspect', label: 'Eye aperture', pillar: 'features', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 0.27, 0.42, 0.14), tip: 'Under-eye puffiness closes the aperture. Cold, sleep, and less salt all show up here.' },
+      score: (v) => peak(v, 0.27, 0.42), tip: 'Under-eye puffiness closes the aperture. Cold, sleep, and less salt all show up here.' },
     { id: 'noseToEyeGap', label: 'Nose width to eye gap', pillar: 'features', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 0.85, 1.10, 0.32), tip: 'Fixed. Keep the nose clean and the skin calm and it reads narrower.' },
+      score: (v) => peak(v, 0.85, 1.10), tip: 'Fixed. Keep the nose clean and the skin calm and it reads narrower.' },
     { id: 'philtrumChin', label: 'Philtrum to chin', pillar: 'features', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 0.30, 0.36, 0.09), tip: 'Posture and lip posture change how the lower third sits. Closed mouth, jaw relaxed.' },
+      score: (v) => peak(v, 0.30, 0.36), tip: 'Posture and lip posture change how the lower third sits. Closed mouth, jaw relaxed.' },
     { id: 'lipToNose', label: 'Mouth to nose width', pillar: 'features', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 1.45, 1.85, 0.42), tip: 'Fixed. Smiling evenly is free and always scores better in photos.' },
+      score: (v) => peak(v, 1.45, 1.85), tip: 'Fixed. Smiling evenly is free and always scores better in photos.' },
     { id: 'vermilionRatio', label: 'Upper to lower lip', pillar: 'features', fmt: (v) => v.toFixed(2),
-      score: (v) => band(v, 0.52, 0.86, 0.32), tip: 'Hydration first. Chapped lips read as thin lips.' },
+      score: (v) => peak(v, 0.52, 0.86), tip: 'Hydration first. Chapped lips read as thin lips.' },
 
     { id: 'evenness', label: 'Tone evenness', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '% var',
-      score: (v) => band(v, 0, 0.055, 0.10), tip: 'SPF every morning is the single highest-return step for even tone.' },
+      score: (v) => flat(v, 0.1), tip: 'SPF every morning is the single highest-return step for even tone.' },
     { id: 'redness', label: 'Redness', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '%',
-      score: (v) => band(v, 0.01, 0.10, 0.11), tip: 'Gentle cleanser, no scrubbing, and a barrier moisturiser at night.' },
+      score: (v) => peak(v, 0.01, 0.10), tip: 'Gentle cleanser, no scrubbing, and a barrier moisturiser at night.' },
     { id: 'underEye', label: 'Under-eye shadow', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '%',
-      score: (v) => band(v, 0, 0.06, 0.12), tip: 'Sleep is the product. Eight hours beats every under-eye cream on the shelf.' },
+      score: (v) => flat(v, 0.12), tip: 'Sleep is the product. Eight hours beats every under-eye cream on the shelf.' },
     { id: 'shine', label: 'T-zone shine', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '%',
-      score: (v) => band(v, 0.50, 0.86, 0.28), tip: 'A light gel moisturiser and blotting beats washing your face five times a day.' },
+      score: (v) => peak(v, 0.50, 0.86), tip: 'A light gel moisturiser and blotting beats washing your face five times a day.' },
     { id: 'texture', label: 'Texture', pillar: 'skin', fmt: (v) => v.toFixed(3),
-      score: (v) => band(v, 0, 0.045, 0.075), tip: 'Consistency over intensity: a simple routine done for 60 days beats a complicated one done twice.' }
+      score: (v) => flat(v, 0.075), tip: 'Consistency over intensity: a simple routine done for 60 days beats a complicated one done twice.' }
   ];
 
   const PILLARS = [
-    { id: 'harmony', label: 'Harmony', weight: 0.30, blurb: 'How the parts sit together: symmetry, thirds, fifths, spacing.' },
-    { id: 'angularity', label: 'Angularity', weight: 0.20, blurb: 'Jaw and chin structure: width, angle, taper.' },
-    { id: 'dimorphism', label: 'Dimorphism', weight: 0.15, blurb: 'How strongly your features read as your stated gender.' },
-    { id: 'features', label: 'Features', weight: 0.25, blurb: 'Eyes, nose and mouth: tilt, aperture, ratios.' },
-    { id: 'skin', label: 'Skin signals', weight: 0.10, blurb: 'Appearance only, read from this photo. Not a measurement.' }
+    { id: 'harmony', label: 'Harmony', weight: 0.26, blurb: 'How the parts sit together: symmetry, thirds, fifths, spacing.' },
+    { id: 'angularity', label: 'Angularity', weight: 0.22, blurb: 'Jaw and chin structure: width, angle, taper.' },
+    { id: 'dimorphism', label: 'Dimorphism', weight: 0.10, blurb: 'How strongly your features read as your stated gender.' },
+    { id: 'features', label: 'Features', weight: 0.24, blurb: 'Eyes, nose and mouth: tilt, aperture, ratios.' },
+    { id: 'skin', label: 'Skin signals', weight: 0.18, blurb: 'Appearance only, read from this photo. Not a measurement.' }
   ];
 
   /* ---------- the score ---------- */
@@ -500,10 +515,15 @@
       (pillarScores[m.pillar] = pillarScores[m.pillar] || []).push(s);
     });
 
+    // a face is read by its weakest feature, not its average one: blend the
+    // arithmetic mean with the geometric mean so one bad measurement drags
     const pillars = {};
     PILLARS.forEach((p) => {
       const arr = pillarScores[p.id] || [];
-      pillars[p.id] = arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+      if (!arr.length) { pillars[p.id] = null; return; }
+      const amean = arr.reduce((a, b) => a + b, 0) / arr.length;
+      const gmean = Math.exp(arr.reduce((a, b) => a + Math.log(Math.max(b, 0.4)), 0) / arr.length);
+      pillars[p.id] = 0.72 * amean + 0.28 * gmean;
     });
 
     let total = 0, wsum = 0;
@@ -528,7 +548,7 @@
   }
 
   /* ---------- capture quality gates ---------- */
-  function quality(lm, w, h, img) {
+  function quality(lm, w, h, img, mode) {
     if (!lm || !lm.length) {
       return { ok: false, chips: [{ id: 'face', label: 'Face', ok: false }], message: 'No face found. Move closer and fill the oval.' };
     }
@@ -562,16 +582,24 @@
       sharpness = e / (n || 1);
     }
 
+    // the front step wants a square-on face; the side step wants a deliberate
+    // three-quarter turn, because the landmark model loses a true profile
+    const side = mode === 'side';
+    const angleOk = side ? (yaw > 0.16 && yaw < 0.62 && roll < 14) : (yaw < 0.09 && roll < 7);
+
     const chips = [
       { id: 'face', label: 'Face', ok: true },
-      { id: 'angle', label: 'Angle', ok: yaw < 0.075 && roll < 7 },
+      { id: 'angle', label: 'Angle', ok: angleOk },
       { id: 'light', label: 'Light', ok: brightness > 0.22 && brightness < 0.92 },
       { id: 'focus', label: 'Focus', ok: sharpness > 0.012 }
     ];
 
     const ok = chips.every((c) => c.ok);
     let message = 'Hold still \u2014 capturing.';
-    if (!chips[1].ok) message = roll >= 7 ? 'Level your head.' : 'Turn to face the camera.';
+    if (!chips[1].ok) {
+      if (side) message = yaw <= 0.16 ? 'Turn your head further to the side.' : 'Come back towards the camera a little.';
+      else message = roll >= 7 ? 'Level your head.' : 'Turn to face the camera.';
+    }
     else if (!chips[2].ok) message = brightness <= 0.22 ? 'Face a light source.' : 'Too bright behind you.';
     else if (!chips[3].ok) message = 'Hold steady \u2014 the frame is soft.';
 

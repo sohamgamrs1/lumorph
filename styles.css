@@ -786,6 +786,13 @@ a { color: inherit; }
   stroke: rgba(255, 255, 255, 0.16);
   stroke-width: 1.2;
 }
+.cam-guide .guide-arrow {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.42);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .cam-guide .guide-tick {
   fill: none;
   stroke: rgba(255, 255, 255, 0.4);
