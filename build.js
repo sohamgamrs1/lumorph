@@ -9,6 +9,8 @@ const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
 
 let html = read('index.html');
 const css = read('styles.css');
+const boot = read('boot.js');
+const i18n = read('i18n.js');
 const engine = read('engine.js');
 const app = read('app.js');
 
@@ -18,12 +20,23 @@ html = html.replace(
   '<style>\n' + css + '\n</style>'
 );
 
+// 2a. drop the CSP meta: this build inlines its scripts, so it would block itself
+html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/, '');
+
 // 2. drop the manifest and icon links (they need sibling files)
 html = html.replace(/<link rel="manifest" href="\.\/manifest\.webmanifest" \/>\n?/, '');
 html = html.replace(/<link rel="icon" href="\.\/icons\/icon-192\.png" \/>\n?/, '');
 html = html.replace(/<link rel="apple-touch-icon" href="\.\/icons\/icon-192\.png" \/>\n?/, '');
 
 // 3. inline the scripts
+html = html.replace(
+  /<script src="\.\/boot\.js"><\/script>/,
+  '<script>\n' + boot + '\n</script>'
+);
+html = html.replace(
+  /<script src="\.\/i18n\.js"><\/script>/,
+  '<script>\n' + i18n + '\n</script>'
+);
 html = html.replace(
   /<script src="\.\/engine\.js"><\/script>/,
   '<script>\n' + engine + '\n</script>'
@@ -37,6 +50,6 @@ if (html.includes('src="./app.js"') || html.includes('href="./styles.css"')) {
   throw new Error('inlining failed: a relative reference survived');
 }
 
-const out = path.join(dir, '..', 'Lumorph.html');
+const out = path.join(dir, 'Lumorph.html');
 fs.writeFileSync(out, html);
 console.log('written', out, (html.length / 1024).toFixed(1) + ' KB');

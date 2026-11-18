@@ -6,6 +6,8 @@
   'use strict';
 
   const E = window.LumorphEngine;
+  const I18N = window.LumorphI18n;
+  const T = (s) => (I18N ? I18N.t(s) : s);
   const $ = (s, r) => (r || document).querySelector(s);
   const app = $('#app');
   const view = $('#view');
@@ -85,6 +87,9 @@
     image: SVG('<rect x="3.6" y="5.2" width="16.8" height="13.6" rx="2.4"/><circle cx="8.7" cy="10" r="1.3"/><path d="M4.6 17.2l4.5-4.3 3.2 2.8 3-2.5 4.1 3.6"/>'),
     flip: SVG('<path d="M12 3.6v16.8"/><path d="M9.2 6.6 4.6 12l4.6 5.4z"/><path d="M14.8 6.6 19.4 12l-4.6 5.4z"/>'),
     clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>'),
+    globe: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8"/><path d="M12 3.6c2.2 2.3 3.3 5.2 3.3 8.4s-1.1 6.1-3.3 8.4c-2.2-2.3-3.3-5.2-3.3-8.4S9.8 5.9 12 3.6z"/>'),
+    share: SVG('<circle cx="17.4" cy="5.6" r="2.5"/><circle cx="6.6" cy="12" r="2.5"/><circle cx="17.4" cy="18.4" r="2.5"/><path d="M8.8 10.9 15.2 6.7"/><path d="M8.8 13.1l6.4 4.2"/>'),
+    report: SVG('<path d="M6.6 3.8h6.6l4.4 4.4v12H6.6z"/><path d="M13.2 3.8v4.4h4.4"/><path d="M9.4 16.6v-3.4M12 16.6v-5.6M14.6 16.6v-2"/>'),
     pencil: SVG('<path d="M4.6 19.4l.9-4.2L15.9 4.8a2 2 0 0 1 2.8 0l.5.5a2 2 0 0 1 0 2.8L8.8 18.5z"/><path d="M14.6 6.1l3.3 3.3"/>'),
     target: SVG('<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>')
   };
@@ -117,14 +122,14 @@
   }
 
   const QUESTS = [
-    { id: 'am', label: 'Morning skincare', xp: 20, icon: 'drop' },
-    { id: 'pm', label: 'Night skincare', xp: 20, icon: 'moon' },
-    { id: 'sleep', label: 'Sleep 7+ hours', xp: 15, icon: 'moon' },
-    { id: 'water', label: 'Drink 2L water', xp: 10, icon: 'water' },
-    { id: 'posture', label: 'Posture check', xp: 10, icon: 'posture' },
-    { id: 'groom', label: 'Grooming', xp: 10, icon: 'comb' }
+    { id: 'am', label: T('Morning skincare'), xp: 20, icon: 'drop' },
+    { id: 'pm', label: T('Night skincare'), xp: 20, icon: 'moon' },
+    { id: 'sleep', label: T('Sleep 7+ hours'), xp: 15, icon: 'moon' },
+    { id: 'water', label: T('Drink 2L water'), xp: 10, icon: 'water' },
+    { id: 'posture', label: T('Posture check'), xp: 10, icon: 'posture' },
+    { id: 'groom', label: T('Grooming'), xp: 10, icon: 'comb' }
   ];
-  const WEEKLY = { id: 'rescan', label: 'Weekly re-scan', xp: 100, icon: 'refresh' };
+  const WEEKLY = { id: 'rescan', label: T('Weekly re-scan'), xp: 100, icon: 'refresh' };
   const BADGES = [
     { id: 'founder', label: 'Founder' },
     { id: 'supporter', label: 'Supporter' },
@@ -297,8 +302,8 @@
     const r = ROUTES[name] || ROUTES.home;
     r(view, opts);
     const isTab = TABS.includes(name);
-    view.classList.toggle('no-tabs', name === 'onboarding' || name === 'processing');
-    paintTabbar(isTab ? name : (name === 'scan' ? 'scan' : ''));
+    view.classList.toggle('no-tabs', name === 'onboarding' || name === 'processing' || name === 'scan');
+    paintTabbar(isTab ? name : '');
     if (isTab) paintTopbar(name);
     window.scrollTo(0, 0);
     reveal(view);
@@ -348,16 +353,16 @@
         h('div', { class: 'topbar' },
           h('div', { class: 'brandmark' }, h('span', { class: 'orb-dot' }), 'Lumorph'),
           h('div', { class: 'grow' }),
-          h('button', { class: 'icon-btn', 'aria-label': 'Profile', onclick: () => go('profile') },
+          h('button', { class: 'icon-btn', 'aria-label': T('Profile'), onclick: () => go('profile') },
             h('span', { html: I.profile, style: { width: '20px', height: '20px', display: 'grid' } }))
         )
       );
     } else if (name === 'progress') {
       topbar.append(h('div', { class: 'topbar' },
-        h('div', {}, h('p', { class: 'eyebrow' }, 'Your numbers'), h('h1', { class: 'display md' }, 'Progress'))));
+        h('div', {}, h('p', { class: 'eyebrow' }, T('Your numbers')), h('h1', { class: 'display md' }, T('Progress')))));
     } else if (name === 'profile') {
       topbar.append(h('div', { class: 'topbar' },
-        h('div', {}, h('p', { class: 'eyebrow' }, 'Account'), h('h1', { class: 'display md' }, 'Profile'))));
+        h('div', {}, h('p', { class: 'eyebrow' }, 'Account'), h('h1', { class: 'display md' }, T('Profile')))));
     }
   }
 
@@ -366,9 +371,9 @@
     if (!active) { tabbar.classList.add('hide'); return; }
     tabbar.classList.remove('hide');
     const items = [
-      { id: 'home', label: 'Home', icon: I.home },
-      { id: 'progress', label: 'Progress', icon: I.progress },
-      { id: 'profile', label: 'Profile', icon: I.profile }
+      { id: 'home', label: T('Home'), icon: I.home },
+      { id: 'progress', label: T('Progress'), icon: I.progress },
+      { id: 'profile', label: T('Profile'), icon: I.profile }
     ];
     const inner = h('div', { class: 'inner' });
     const glow = h('div', { class: 'glow' });
@@ -382,7 +387,7 @@
     });
     const scan = h('button', {
       class: 'scan-fab', onclick: () => go('scan')
-    }, h('span', { html: I.scan, style: { display: 'grid' } }), 'Scan');
+    }, h('span', { html: I.scan, style: { display: 'grid' } }), T('Scan'));
     inner.append(scan);
     tabbar.append(inner);
 
@@ -396,20 +401,20 @@
 
   /* ---------- onboarding ---------- */
   const SKIN_TYPES = [
-    { id: 'balanced', t: 'Balanced', s: 'Comfortable, rarely shiny or tight' },
-    { id: 'oily', t: 'Oily / shine', s: 'Shine by midday, visible pores' },
-    { id: 'acne', t: 'Acne-prone', s: 'Frequent breakouts or congestion' },
-    { id: 'dry', t: 'Dry / dehydrated', s: 'Tight, flaky or dull patches' },
-    { id: 'sensitive', t: 'Sensitive / redness', s: 'Reacts easily, flushes often' },
-    { id: 'dark', t: 'Dark spots / scars', s: 'Marks left behind by old breakouts' }
+    { id: 'balanced', t: T('Balanced'), s: 'Comfortable, rarely shiny or tight' },
+    { id: 'oily', t: T('Oily / shine'), s: 'Shine by midday, visible pores' },
+    { id: 'acne', t: T('Acne-prone'), s: 'Frequent breakouts or congestion' },
+    { id: 'dry', t: T('Dry / dehydrated'), s: 'Tight, flaky or dull patches' },
+    { id: 'sensitive', t: T('Sensitive / redness'), s: 'Reacts easily, flushes often' },
+    { id: 'dark', t: T('Dark spots / scars'), s: 'Marks left behind by old breakouts' }
   ];
   const CONCERNS = [
-    { id: 'maintenance', t: 'General maintenance', s: 'Keep it clear and steady' },
-    { id: 'clarity', t: 'Clearer skin', s: 'Fewer breakouts, less congestion' },
-    { id: 'even', t: 'Even tone', s: 'Fade marks, even the complexion' },
-    { id: 'eyes', t: 'Under-eye area', s: 'Shadow and puffiness' },
-    { id: 'definition', t: 'Facial definition', s: 'Jaw, cheekbones, less puffiness' },
-    { id: 'hair', t: 'Hair and grooming', s: 'Cut, styling, brow upkeep' }
+    { id: 'maintenance', t: T('General maintenance'), s: 'Keep it clear and steady' },
+    { id: 'clarity', t: T('Clearer skin'), s: 'Fewer breakouts, less congestion' },
+    { id: 'even', t: T('Even tone'), s: 'Fade marks, even the complexion' },
+    { id: 'eyes', t: T('Under-eye area'), s: 'Shadow and puffiness' },
+    { id: 'definition', t: T('Facial definition'), s: 'Jaw, cheekbones, less puffiness' },
+    { id: 'hair', t: T('Hair and grooming'), s: 'Cut, styling, brow upkeep' }
   ];
 
   let onb = null;
@@ -553,27 +558,27 @@
         onkeydown: (e) => { if (e.key === 'Enter') advance(); }
       });
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Welcome'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('Welcome')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'Let\u2019s get your ', h('em', {}, 'baseline'), '.'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
           'Seven quick questions, then one scan. Everything stays on this device \u2014 there is no account and no server.'),
         h('label', { class: 'field ' + riseCls(3), style: rise(3) },
-          h('span', { class: 'lab' }, 'What should we call you?'),
+          h('span', { class: 'lab' }, T('What should we call you?')),
           input,
           h('span', { class: 'hint' }, '2\u2013' + NAME_MAX + ' characters')),
         h('p', { class: 'tiny ' + riseCls(4), style: Object.assign({ marginTop: '18px' }, rise(4)) },
           'Lumorph is appearance guidance, not medical advice. It never diagnoses anything.')
       );
-      foot.append(nextBtn('Continue', advance));
+      foot.append(nextBtn(T('Continue'), advance));
       setTimeout(() => { if (document.body.contains(input)) input.focus({ preventScroll: true }); }, first ? 520 : 260);
     }
 
     if (onb.step === 1) {
       const opts = [
-        { id: 'male', t: 'Male', s: 'Uses the male reference ranges' },
-        { id: 'female', t: 'Female', s: 'Uses the female reference ranges' },
-        { id: 'other', t: 'Other', s: 'Uses a blended range' }
+        { id: 'male', t: T('Male'), s: 'Uses the male reference ranges' },
+        { id: 'female', t: T('Female'), s: 'Uses the female reference ranges' },
+        { id: 'other', t: T('Other'), s: 'Uses a blended range' }
       ];
       const group = h('div', { class: 'choices one mt-20' });
       opts.forEach((o, i) => {
@@ -589,14 +594,14 @@
            h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s)));
       });
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'About you'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('About you')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'How should we ', h('em', {}, 'read'), ' your features?'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
           'Scores are measured against reference ranges, so this changes the yardstick \u2014 not the measurement.'),
         group
       );
-      foot.append(nextBtn('Continue', advance));
+      foot.append(nextBtn(T('Continue'), advance));
     }
 
     if (onb.step === 2) {
@@ -616,18 +621,18 @@
         }
       });
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'About you'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('About you')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'When were you ', h('em', {}, 'born'), '?'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
           'Age shifts what is normal for skin and structure. It is used for your plan, nothing else.'),
         h('label', { class: 'field ' + riseCls(3), style: rise(3) },
-          h('span', { class: 'lab' }, 'Date of birth'),
+          h('span', { class: 'lab' }, T('Date of birth')),
           dateInput,
           h('span', { class: 'hint' }, 'You must be ' + MIN_AGE + ' or older to use Lumorph')),
         pill
       );
-      foot.append(nextBtn('Continue', advance));
+      foot.append(nextBtn(T('Continue'), advance));
     }
 
     if (onb.step === 3) {
@@ -652,7 +657,7 @@
         }, label));
       });
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'About you'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('About you')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'How tall are ', h('em', {}, 'you'), '?'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
@@ -660,7 +665,7 @@
         unitToggle,
         h('div', { class: 'center ' + riseCls(4), style: Object.assign({ marginTop: '30px' }, rise(4)) }, valueEl, slider)
       );
-      foot.append(nextBtn('Continue', advance));
+      foot.append(nextBtn(T('Continue'), advance));
     }
 
     if (onb.step === 4) {
@@ -680,14 +685,14 @@
            h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s)));
       });
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Your skin'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('Your skin')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'Which skin type ', h('em', {}, 'fits'), ' best?'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
           'Pick everything that applies. Your routine is built around this.'),
         group
       );
-      foot.append(nextBtn('Continue', advance));
+      foot.append(nextBtn(T('Continue'), advance));
     }
 
     if (onb.step === 5) {
@@ -708,14 +713,14 @@
            h('span', { class: 't' }, o.t), h('span', { class: 's' }, o.s)));
       });
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Your skin'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('Your skin')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'What do you want to ', h('em', {}, 'change'), '?'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
           'Your plan targets these. Pick up to three.'),
         group
       );
-      foot.append(nextBtn('Continue', advance));
+      foot.append(nextBtn(T('Continue'), advance));
     }
 
     if (onb.step === 6) {
@@ -726,7 +731,7 @@
         ['Phone at eye level', 'Hold it straight in front of you, at arm\u2019s length.']
       ];
       body.append(
-        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, 'Your first scan'),
+        h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('Your first scan')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
           'How to take a ', h('em', {}, 'good'), ' scan'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
@@ -742,7 +747,7 @@
             h('span', { style: { fontSize: '13.5px', fontWeight: '600' } }, 'Where your photo goes')),
           h('p', { class: 'small' }, 'Nowhere. The scan runs in this browser tab, the measurements never leave the device, and the photo is kept in this browser\u2019s own storage so you can see your history. No upload, no account, no third party.'))
       );
-      foot.append(nextBtn('Take my first scan', advance, I.camera));
+      foot.append(nextBtn(T('Take my first scan'), advance, I.camera));
     }
 
     view.append(wrap);
@@ -773,7 +778,7 @@
     const q = dayQuests();
     const done = QUESTS.filter((x) => q[x.id]).length;
     const hour = new Date().getHours();
-    const greet = hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 22 ? 'Good evening' : 'Still up';
+    const greet = hour < 5 ? T('Still up') : hour < 12 ? T('Good morning') : hour < 17 ? T('Good afternoon') : hour < 22 ? T('Good evening') : T('Still up');
     const focus = scan && scan.pillars
       ? E.PILLARS.filter((p) => scan.pillars[p.id] != null).sort((a, b) => scan.pillars[a.id] - scan.pillars[b.id])[0]
       : null;
@@ -797,7 +802,7 @@
       h('div', { class: 'rise', style: { '--i': 0, paddingTop: '6px' } },
         h('div', { class: 'row between' },
           h('div', {},
-            h('p', { class: 'eyebrow' }, 'Welcome back'),
+            h('p', { class: 'eyebrow' }, T('Welcome back')),
             h('h1', { class: 'display lg', style: { marginTop: '6px' } }, greet + ', ', h('em', {}, S.profile.name))),
           h('div', { class: 'pill gold' }, h('span', { class: 'dot' }), rk.name))),
 
@@ -814,17 +819,17 @@
           h('div', { class: 'row gap-16' },
             ring(78, scan.overall, 0),
             h('div', { class: 'grow' },
-              h('p', { class: 'eyebrow' }, 'Focus'),
-              h('div', { class: 'display sm', style: { marginTop: '4px' } }, focus ? focus.label : 'Balanced'),
+              h('p', { class: 'eyebrow' }, T('Focus')),
+              h('div', { class: 'display sm', style: { marginTop: '4px' } }, focus ? focus.label : T('Balanced')),
               h('div', { class: 'row gap-12 mt-8' },
-                stat('Face', scan.overall),
-                stat('Skin', scan.pillars.skin != null ? scan.pillars.skin : '\u2014')))),
+                stat(T('Face'), scan.overall),
+                stat(T('Skin'), scan.pillars.skin != null ? scan.pillars.skin : '\u2014')))),
           h('div', { class: 'row gap-8 mt-16' },
-            h('button', { class: 'btn small ghost', onclick: () => go('results') }, 'See breakdown'),
-            h('button', { class: 'btn small ghost', onclick: () => go('scan') }, 'Scan again'))
+            h('button', { class: 'btn small ghost', onclick: () => go('results') }, T('See breakdown')),
+            h('button', { class: 'btn small ghost', onclick: () => go('scan') }, T('Scan again')))
         ] : [
-          h('p', { class: 'eyebrow' }, 'Your baseline'),
-          h('div', { class: 'display sm', style: { marginTop: '6px' } }, 'No scan yet'),
+          h('p', { class: 'eyebrow' }, T('Your baseline')),
+          h('div', { class: 'display sm', style: { marginTop: '6px' } }, T('No scan yet')),
           h('p', { class: 'small mt-8' }, 'One photo, measured on this device, gives you every number in the app.'),
           h('button', { class: 'btn primary mt-16', onclick: () => go('scan') }, 'Take your first scan')
         ]),
@@ -836,16 +841,16 @@
             h('span', { class: 'ico', style: { width: '34px', height: '34px', borderRadius: '11px', display: 'grid', placeItems: 'center', background: 'var(--surface-2)', color: 'var(--gold)' } },
               h('span', { html: I.drop, style: { width: '18px', height: '18px', display: 'grid' } })),
             h('div', {},
-              h('div', { style: { fontSize: '14px', fontWeight: '600' } }, 'Skin routine'),
+              h('div', { style: { fontSize: '14px', fontWeight: '600' } }, T('Skin routine')),
               h('div', { class: 'small' }, routineTitle()))),
-          h('button', { class: 'icon-btn ghost', 'aria-label': 'Open routine', onclick: () => go('routine') },
+          h('button', { class: 'icon-btn ghost', 'aria-label': T('Open routine'), onclick: () => go('routine') },
             h('span', { html: I.chev, style: { display: 'grid' } })))),
 
       /* plan */
       h('div', { class: 'card mt-16 rise', style: { '--i': 5 } },
         h('div', { class: 'row between' },
           h('div', {},
-            h('div', { style: { fontSize: '14px', fontWeight: '600' } }, 'Your plan'),
+            h('div', { style: { fontSize: '14px', fontWeight: '600' } }, T('Your plan')),
             h('div', { class: 'small' }, planLine())),
           h('div', { class: 'pill' }, done + '/6') )),
 
@@ -857,7 +862,7 @@
         h('div', {}, QUESTS.map((q2) => questRow(q2, q))),
         h('div', { class: 'row between mt-16', style: { paddingTop: '14px', borderTop: '1px solid var(--line)' } },
           h('div', {},
-            h('div', { class: 'small xp-next' }, rk.next ? rk.next.at - S.xp + ' XP to ' + rk.next.name : 'Top rank reached'),
+            h('div', { class: 'small xp-next' }, rk.next ? rk.next.at - S.xp + ' XP to ' + rk.next.name : T('Top rank reached')),
             h('div', { class: 'bar thin mt-8 xp-bar', style: { width: '150px', '--w': rk.pct } }, h('i', {}))),
           h('div', { class: 'display sm mono' }, h('span', { class: 'xp-total' }, String(S.xp)), ' XP')),
 
@@ -874,11 +879,11 @@
 
   function routineTitle() {
     const t = S.profile.skin.map((id) => (SKIN_TYPES.find((s) => s.id === id) || {}).t).filter(Boolean);
-    return (t[0] || 'Balanced') + ' \u00b7 ' + routineSteps().length + ' steps';
+    return (t[0] || T('Balanced')) + ' \u00b7 ' + routineSteps().length + ' steps';
   }
   function planLine() {
     const c = S.profile.concerns.map((id) => (CONCERNS.find((s) => s.id === id) || {}).t).filter(Boolean);
-    return (c[0] || 'General maintenance') + ' \u00b7 ' + c.length + ' target' + (c.length === 1 ? '' : 's');
+    return (c[0] || T('General maintenance')) + ' \u00b7 ' + c.length + ' target' + (c.length === 1 ? '' : 's');
   }
 
   function questRow(q2, q) {
@@ -887,7 +892,7 @@
       h('span', { class: 'tick' }, h('span', { html: I.check, style: { display: 'grid' } })),
       h('div', { class: 'grow' },
         h('div', { class: 't' }, q2.label),
-        h('div', { class: 'tiny' }, on ? 'Cleared' : 'Tap to clear')),
+        h('div', { class: 'tiny' }, on ? T('Cleared') : T('Tap to clear'))),
       h('span', { class: 'xp' }, '+' + q2.xp));
   }
 
@@ -908,7 +913,7 @@
     if (rowEl) {
       rowEl.classList.toggle('done', on);
       const sub = rowEl.querySelector('.tiny');
-      if (sub) sub.textContent = on ? 'Cleared' : 'Tap to clear';
+      if (sub) sub.textContent = on ? T('Cleared') : T('Tap to clear');
     }
     const count = view.querySelector('.quest-count');
     if (count) count.textContent = done + '/6';
@@ -922,7 +927,7 @@
     const bar = view.querySelector('.xp-bar');
     if (bar) bar.style.setProperty('--w', rk.pct);
     const nextLbl = view.querySelector('.xp-next');
-    if (nextLbl) nextLbl.textContent = rk.next ? (rk.next.at - S.xp) + ' XP to ' + rk.next.name : 'Top rank reached';
+    if (nextLbl) nextLbl.textContent = rk.next ? (rk.next.at - S.xp) + ' XP to ' + rk.next.name : T('Top rank reached');
   }
 
   /* ---------- progress ---------- */
@@ -935,9 +940,9 @@
       root.append(
         h('div', { class: 'card mt-16 rise' },
           h('p', { class: 'eyebrow' }, 'Nothing to plot yet'),
-          h('div', { class: 'display sm mt-8' }, 'Your first scan starts the line'),
+          h('div', { class: 'display sm mt-8' }, T('Your first scan starts the line')),
           h('p', { class: 'small mt-8' }, 'Progress needs two points. Take a scan now, then again in a week \u2014 same light, same angle.'),
-          h('button', { class: 'btn primary mt-16', onclick: () => go('scan') }, 'Take a scan'))
+          h('button', { class: 'btn primary mt-16', onclick: () => go('scan') }, T('Take a scan')))
       );
       return;
     }
@@ -950,7 +955,7 @@
       h('div', { class: 'card mt-12 rise', style: { '--i': 0 } },
         h('div', { class: 'row between' },
           h('div', {},
-            h('p', { class: 'eyebrow' }, 'Face score'),
+            h('p', { class: 'eyebrow' }, T('Face score')),
             h('div', { class: 'display xl mono', style: { marginTop: '2px' } }, last.overall.toFixed(1))),
           ring(72, last.overall, 0)),
         h('div', { class: 'row gap-8 mt-8' },
@@ -966,42 +971,49 @@
         h('p', { class: 'tiny mt-12' }, 'Scores move with light, angle and expression as well as with you. Compare scans taken the same way.')
       ),
 
-      h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
+      h('button', { class: 'card mt-16 rise', style: { '--i': 1, width: '100%', textAlign: 'left' }, onclick: openRecap },
         h('div', { class: 'row between' },
           h('div', {},
-            h('p', { class: 'eyebrow' }, 'Rank'),
+            h('p', { class: 'eyebrow' }, 'Last seven days'),
+            h('div', { class: 'display sm', style: { marginTop: '4px' } }, 'Your week')),
+          h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }))),
+
+      h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
+        h('div', { class: 'row between' },
+          h('div', {},
+            h('p', { class: 'eyebrow' }, T('Rank')),
             h('div', { class: 'display md', style: { marginTop: '4px' } }, rk.name)),
           h('div', { class: 'display sm mono', style: { color: 'var(--gold)' } }, S.xp + ' XP')),
         h('div', { class: 'bar mt-12', style: { '--w': rk.pct } }, h('i', {})),
-        h('p', { class: 'tiny mt-8' }, rk.next ? (rk.next.at - S.xp) + ' XP to ' + rk.next.name : 'Top rank reached')),
+        h('p', { class: 'tiny mt-8' }, rk.next ? (rk.next.at - S.xp) + ' XP to ' + rk.next.name : T('Top rank reached'))),
 
       h('div', { class: 'row gap-10 mt-16 rise', style: { '--i': 2 } },
-        bigStat(streak(), 'Day streak'),
-        bigStat(bestStreak(), 'Best streak'),
-        bigStat(monthCount(), 'This month')),
+        bigStat(streak(), T('Day streak')),
+        bigStat(bestStreak(), T('Best streak')),
+        bigStat(monthCount(), T('This month'))),
 
       h('div', { class: 'card mt-16 rise', style: { '--i': 3 } },
         h('div', { class: 'card-h' },
-          h('div', { class: 'eyebrow' }, 'Last five weeks'),
+          h('div', { class: 'eyebrow' }, T('Last five weeks')),
           h('div', { class: 'row gap-8' },
-            h('span', { class: 'tiny' }, 'Cleared'),
+            h('span', { class: 'tiny' }, T('Cleared')),
             h('span', { class: 'tiny', style: { color: 'var(--faint)' } }, 'Frozen'))),
         heatmap()),
 
       h('div', { class: 'card mt-16 rise', style: { '--i': 4 } },
-        h('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'Scan history'),
+        h('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, T('Scan history')),
         h('div', { class: 'list' }, scans.slice().reverse().map((s) => h('div', {
           class: 'item', onclick: () => { S._open = s.id; go('results', { id: s.id }); }
         },
           h('span', { class: 'ico', style: { background: 'var(--surface-2)' } }, s.overall.toFixed(1)),
           h('div', { class: 'txt' },
             h('div', { class: 't' }, new Date(s.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })),
-            h('div', { class: 's' }, (s.focus && s.focus[0] ? 'Focus: ' + s.focus[0].label : 'Balanced') + ' \u00b7 ' + new Date(s.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }))),
+            h('div', { class: 's' }, (s.focus && s.focus[0] ? 'Focus: ' + s.focus[0].label : T('Balanced')) + ' \u00b7 ' + new Date(s.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }))),
           h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }))))),
 
       h('button', { class: 'item rise', style: { '--i': 5, width: '100%' }, onclick: () => go('how') },
         h('span', { class: 'ico', html: I.info, style: { display: 'grid' } }),
-        h('div', { class: 'txt' }, h('div', { class: 't' }, 'How these numbers are calculated'), h('div', { class: 's' }, 'The full rubric, in plain language')),
+        h('div', { class: 'txt' }, h('div', { class: 't' }, T('How these numbers are calculated')), h('div', { class: 's' }, 'The full rubric, in plain language')),
         h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }))
     );
   };
@@ -1087,6 +1099,7 @@
 
   /* ---------- scan ---------- */
   let cam = { stream: null, raf: null, active: false, lm: null, last: 0, lmReady: null, err: null };
+  let flow = { step: 0, shots: [], demo: false };
 
   function stopCam() {
     cam.active = false;
@@ -1113,36 +1126,99 @@
     return cam.lmReady;
   }
 
+  const GUIDE_FRONT = `<svg viewBox="0 0 200 280" preserveAspectRatio="xMidYMid meet">
+      <ellipse class="guide-main" cx="100" cy="140" rx="62" ry="94"/>
+      <path class="guide-tick" d="M100 34v-12M100 246v12M38 140H26M174 140h-12"/>
+      <path class="guide-soft" d="M40 108q60-14 120 0"/>
+    </svg>`;
+
+  const GUIDE_SIDE = `<svg viewBox="0 0 200 280" preserveAspectRatio="xMidYMid meet">
+      <ellipse class="guide-soft" cx="104" cy="140" rx="60" ry="94"/>
+      <path class="guide-main" d="M104 32c34 0 56 22 56 52 0 16-6 26-2 38 4 13-2 20 6 30 10 12 4 30-14 40-12 6-26 8-38 6-22-4-38-20-38-42 0-14 4-22 8-34 6-16 6-28 6-42 0-26 8-48 16-48z"/>
+      <path class="guide-tick" d="M104 32v-12M104 248v12"/>
+    </svg>`;
+
+  function guideMarkup(step) {
+    return step === 0 ? GUIDE_FRONT : GUIDE_SIDE;
+  }
+
   ROUTES.scan = function (root) {
     const demo = /demo=1/.test(location.search);
+    flow = { step: 0, shots: [], demo };
+
     const video = h('video', { playsinline: true, autoplay: true, muted: true });
-    const oval = h('div', { class: 'cam-oval' },
-      h('div', { html: `<svg viewBox="0 0 200 280"><ellipse class="guide" cx="100" cy="140" rx="62" ry="96"/></svg>` }));
+    const guide = h('div', { class: 'cam-guide', html: guideMarkup(0) });
+    const stepPill = h('div', { class: 'cam-step' }, h('span', { class: 'dot' }), '1 of 2 · ' + T('Front'));
     const hint = h('div', { class: 'cam-hint' }, 'Starting camera\u2026');
+    const flash = h('div', { class: 'cam-flash' });
+    const panel = h('div', { class: 'cam-panel' }, video, guide, stepPill, hint, flash);
     const chips = h('div', { class: 'cam-chips' });
-    const wrap = h('div', { class: 'cam-wrap' }, video, oval, hint);
     const fileInput = h('input', { type: 'file', accept: 'image/*', class: 'hide' });
 
-    const captureBtn = h('button', { class: 'btn primary mt-16', disabled: true, onclick: () => capture() },
-      h('span', { html: I.camera, style: { width: '18px', height: '18px', display: 'grid' } }), 'Capture');
+    const shutter = h('button', { class: 'shutter', disabled: true, 'aria-label': T('Capture') },
+      h('span', { class: 'shutter-ring' }), h('span', { class: 'shutter-dot' }));
+
+    const skipSide = h('button', {
+      class: 'btn small ghost hide', style: { margin: '0 auto' },
+      onclick: () => finishFlow()
+    }, 'Skip the side photo');
 
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
-        h('div', { class: 'row between', style: { paddingTop: '6px', marginBottom: '14px' } },
+        h('div', { class: 'row between', style: { paddingTop: '6px', marginBottom: '12px' } },
           h('button', { class: 'icon-btn', 'aria-label': 'Close', onclick: () => go(lastScan() ? 'home' : 'onboarding') },
             h('span', { html: I.close, style: { display: 'grid', width: '18px', height: '18px' } })),
           h('button', { class: 'btn small ghost', onclick: () => fileInput.click() },
-            h('span', { html: I.upload, style: { width: '16px', height: '16px', display: 'grid' } }), 'Upload'))),
-      h('div', { class: 'rise', style: { '--i': 1 } },
-        h('p', { class: 'eyebrow' }, 'New scan'),
-        h('h1', { class: 'display md', style: { marginTop: '4px' } }, 'Fill the oval, ', h('em', {}, 'look straight'), '.')),
-      wrap, chips, captureBtn, fileInput,
-      h('p', { class: 'tiny center mt-16 rise', style: { '--i': 3 } },
-        'Measured in this tab. Nothing is uploaded. Photos are kept in your browser so your history works offline.')
+            h('span', { html: I.upload, style: { width: '16px', height: '16px', display: 'grid' } }), T('Upload')))),
+      h('div', { class: 'rise', style: { '--i': 1, marginBottom: '14px' } },
+        h('p', { class: 'eyebrow' }, T('New scan')),
+        h('h1', { class: 'display md', style: { marginTop: '4px' } }, T('Fill the oval, look straight.'))),
+      h('div', { class: 'rise', style: { '--i': 2 } }, panel),
+      chips,
+      h('div', { class: 'shutter-row rise', style: { '--i': 3 } }, shutter),
+      skipSide,
+      fileInput,
+      h('p', { class: 'tiny center mt-16 rise', style: { '--i': 4 } },
+        'Measured in this tab. Nothing is uploaded. Photos stay in your browser.')
     );
 
+    const chipEls = {};
+    [['face', 'Face'], ['angle', 'Angle'], ['light', 'Light'], ['focus', 'Focus']].forEach(([id, label]) => {
+      const el = h('span', { class: 'qchip' }, h('span', { class: 'd' }), label);
+      chipEls[id] = el;
+      chips.append(el);
+    });
+
+    function updateLive() {
+      const vw = video.videoWidth || 1080, vh = video.videoHeight || 1440;
+      const q = E.quality(cam.lm, vw, vh, video);
+      Object.keys(chipEls).forEach((id) => {
+        const c = (q.chips || []).find((x) => x.id === id);
+        chipEls[id].classList.toggle('ok', !!(c && c.ok));
+      });
+      guide.classList.toggle('ok', q.ok);
+      hint.textContent = q.message;
+      shutter.disabled = !q.ok;
+    }
+
+    function setStep(n) {
+      flow.step = n;
+      guide.innerHTML = guideMarkup(n);
+      stepPill.innerHTML = '';
+      stepPill.append(h('span', { class: 'dot' }), (n === 0 ? '1 of 2 \u00b7 ' + T('Front') : '2 of 2 \u00b7 ' + T('Side')));
+      skipSide.classList.toggle('hide', n === 0);
+      if (n === 1) {
+        hint.textContent = 'Turn your head to the side, chin level.';
+        shutter.disabled = !flow.demo;
+      }
+    }
+
     async function boot() {
-      if (demo) { hint.textContent = 'Preview mode \u2014 using a sample face'; captureBtn.disabled = false; return; }
+      if (demo) {
+        hint.textContent = 'Preview mode \u2014 using a sample face';
+        shutter.disabled = false;
+        return;
+      }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1440 } }, audio: false
@@ -1170,36 +1246,16 @@
       } catch (err) {
         cam.err = err;
         hint.textContent = err && err.name === 'NotAllowedError'
-          ? 'Camera permission denied \u2014 upload a photo instead'
-          : 'No camera here \u2014 upload a photo instead';
-        captureBtn.disabled = true;
-        chips.innerHTML = '';
-        chips.append(h('span', { class: 'qchip' }, 'Use Upload above'));
+          ? 'Camera permission denied \u2014 use Upload instead'
+          : 'No camera here \u2014 use Upload instead';
+        shutter.disabled = true;
       }
     }
 
-    const chipEls = {};
-    [['face', 'Face'], ['angle', 'Angle'], ['light', 'Light'], ['focus', 'Focus']].forEach(([id, label]) => {
-      const el = h('span', { class: 'qchip' }, h('span', { class: 'd' }), label);
-      chipEls[id] = el;
-      chips.append(el);
-    });
-
-    function updateLive() {
-      const vw = video.videoWidth || 1080, vh = video.videoHeight || 1440;
-      const q = E.quality(cam.lm, vw, vh, video);
-      Object.keys(chipEls).forEach((id) => {
-        const c = (q.chips || []).find((x) => x.id === id);
-        chipEls[id].classList.toggle('ok', !!(c && c.ok));
-      });
-      oval.classList.toggle('ok', q.ok);
-      hint.textContent = q.message;
-      captureBtn.disabled = !q.ok;
-    }
-
     function capture() {
-      if (demo) {
-        processScan(null, E.demoLandmarks(Math.floor(Math.random() * 99999)), 1080, 1440);
+      if (flow.demo) {
+        const lm = E.demoLandmarks(Math.floor(Math.random() * 99999));
+        takeShot(null, lm, 1080, 1440);
         return;
       }
       if (!cam.lm || !cam.stream) { toast('No face detected yet'); return; }
@@ -1210,11 +1266,31 @@
       const ctx = cv.getContext('2d');
       if (flipped) { ctx.translate(vw, 0); ctx.scale(-1, 1); }
       ctx.drawImage(video, 0, 0, vw, vh);
-      const pts = flipped
-        ? cam.lm.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z }))
-        : cam.lm;
-      processScan(cv, pts, vw, vh);
+      const pts = flipped ? cam.lm.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })) : cam.lm;
+      takeShot(cv, pts, vw, vh);
     }
+
+    function takeShot(source, lm, w, h) {
+      haptic(18);
+      flash.classList.remove('on');
+      void flash.offsetWidth;
+      flash.classList.add('on');
+      flow.shots.push({ source, lm, w, h });
+      if (flow.shots.length === 1) {
+        setTimeout(() => setStep(1), 260);
+      } else {
+        finishFlow();
+      }
+    }
+
+    function finishFlow() {
+      if (!flow.shots.length) return;
+      const front = flow.shots[0];
+      const side = flow.shots[1] || null;
+      processScan(front, side);
+    }
+
+    shutter.addEventListener('click', capture);
 
     fileInput.addEventListener('change', async (e) => {
       const f = e.target.files && e.target.files[0];
@@ -1228,7 +1304,8 @@
           await lm.setOptions({ runningMode: 'VIDEO' });
           const pts = res.faceLandmarks && res.faceLandmarks[0];
           if (!pts) { toast('No face found in that photo'); return; }
-          processScan(img, pts, img.naturalWidth, img.naturalHeight);
+          flow.shots = [{ source: img, lm: pts, w: img.naturalWidth, h: img.naturalHeight }];
+          finishFlow();
         } catch (err) {
           toast('Could not read that photo');
         }
@@ -1242,15 +1319,15 @@
   /* ---------- processing ---------- */
   let pendingScan = null;
 
-  function processScan(source, landmarks, w, h) {
+  function processScan(front, side) {
     stopCam();
-    pendingScan = { source, landmarks, w, h };
+    pendingScan = { front, side };
     go('processing');
   }
 
   ROUTES.processing = function (root) {
     const p = pendingScan;
-    const steps = ['Measuring your face', 'Reading your skin', 'Building your plan'];
+    const steps = [T('Measuring your face'), T('Reading your skin'), T('Building your plan')];
     const list = h('div', { class: 'proc-list' });
     const nodes = steps.map((s, i) => {
       const n = h('div', { class: 'proc-step' + (i === 0 ? ' active' : '') },
@@ -1270,7 +1347,7 @@
         h('h1', { class: 'display lg', style: { marginTop: '8px' } }, 'Preparing your ', h('em', {}, 'results'))),
       list));
 
-    if (!p) { setTimeout(() => go('home'), 400); return; }
+    if (!p || !p.front) { setTimeout(() => go('home'), 400); return; }
 
     let i = 0;
     const advance = () => {
@@ -1289,24 +1366,43 @@
 
     function finish() {
       if (route !== 'processing') return;
+      const f = p.front;
       let metrics = {};
       let quality = { ok: true, chips: [] };
       try {
-        metrics = E.rawMetrics(p.landmarks, p.w, p.h);
-        if (p.source) {
-          const skin = E.skinMetrics(p.source, p.landmarks);
+        metrics = E.rawMetrics(f.lm, f.w, f.h);
+        if (f.source) {
+          // exposure is pulled toward a neutral target before skin is read, so a
+          // dim room does not score as worse skin than a bright one
+          const lit = E.normalise(f.source);
+          const skin = E.skinMetrics(lit, f.lm);
           if (skin) Object.assign(metrics, skin);
-          quality = E.quality(p.landmarks, p.w, p.h, p.source);
+          quality = E.quality(f.lm, f.w, f.h, f.source);
         }
       } catch (err) { /* keep whatever measured cleanly */ }
 
-      // preview mode has no photo to read: use plausible skin numbers
-      if (!p.source && /demo=1/.test(location.search)) {
+      if (!f.source && /demo=1/.test(location.search)) {
         Object.assign(metrics, { evenness: 0.052, redness: 0.061, underEye: 0.031, shine: 0.64, texture: 0.030 });
       }
 
       const res = E.score(metrics, (S.profile && S.profile.gender) || 'other');
-      const thumb = p.source ? shrink(p.source, 220) : null;
+
+      // side profile, beta, never part of the overall score
+      let side = null;
+      if (p.side && p.side.lm) {
+        try {
+          const sm = E.sideMetrics(p.side.lm, p.side.w, p.side.h);
+          if (sm) {
+            side = {
+              score: Math.max(1, Math.min(10, Math.round(sm.harmony * 10) / 10)),
+              jawline: Math.round(sm.jawline * 10) / 10,
+              projection: Math.round(sm.chinProjection * 10) / 10
+            };
+          }
+        } catch (e) { side = null; }
+      }
+
+      const thumb = f.source ? shrink(f.source, 320) : null;
       const scan = {
         id: 's' + Date.now(),
         ts: Date.now(),
@@ -1315,6 +1411,8 @@
         details: res.details,
         focus: res.focus,
         metrics,
+        side,
+        lm: E.encodeLandmarks(f.lm),
         quality: { ok: quality.ok, chips: (quality.chips || []).map((c) => ({ id: c.id, label: c.label, ok: c.ok })) },
         thumb
       };
@@ -1349,7 +1447,7 @@
     const seg = h('div', { class: 'segmented rise', style: { '--i': 1 } });
     const thumb = h('div', { class: 'thumb' });
     seg.append(thumb);
-    [['face', 'Face'], ['ratings', 'Ratings'], ['insights', 'Insights']].forEach(([k, label]) => {
+    [['face', T('Face')], ['ratings', T('Ratings')], ['insights', T('Insights')]].forEach(([k, label]) => {
       seg.append(h('button', {
         'aria-selected': String(resTab === k),
         onclick: (e) => {
@@ -1367,7 +1465,11 @@
         h('div', { class: 'row between', style: { paddingTop: '6px', marginBottom: '10px' } },
           h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('home') },
             h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } })),
-          h('span', { class: 'pill plain' }, new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }))),
+          h('div', { class: 'row gap-8' },
+            h('button', { class: 'icon-btn', 'aria-label': 'Download report', onclick: () => downloadReport(scan) },
+              h('span', { html: I.report, style: { display: 'grid', width: '19px', height: '19px' } })),
+            h('button', { class: 'icon-btn', 'aria-label': 'Share', onclick: () => shareResult(scan) },
+              h('span', { html: I.share, style: { display: 'grid', width: '19px', height: '19px' } })))),
         h('p', { class: 'eyebrow' }, 'Your scan'),
         h('h1', { class: 'display md', style: { marginTop: '4px', marginBottom: '14px' } }, 'Face ', h('em', {}, 'analysis'))),
       seg
@@ -1401,11 +1503,11 @@
         h('div', { class: 'row gap-16' },
           ring(112, scan.overall, 120),
           h('div', { class: 'grow' },
-            h('p', { class: 'eyebrow' }, 'Overall'),
+            h('p', { class: 'eyebrow' }, T('Overall')),
             h('div', { class: 'display md', style: { marginTop: '2px' } }, scoreWord(scan.overall)),
             h('p', { class: 'small mt-8' }, 'Measured from 478 landmarks on this device. No cloud, no guessing.')))),
       h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
-        h('div', { class: 'card-h' }, h('div', { class: 'eyebrow' }, 'Pillars')),
+        h('div', { class: 'card-h' }, h('div', { class: 'eyebrow' }, T('Pillars'))),
         E.PILLARS.map((p) => {
           const v = scan.pillars[p.id];
           return h('div', { class: 'pillar' },
@@ -1415,8 +1517,20 @@
             h('div', { class: 'bar', style: { '--w': (v || 0) / 10 } }, h('i', {})),
             h('div', { class: 'blurb' }, p.blurb));
         })),
-      h('div', { class: 'mt-20 rise', style: { '--i': 2 } },
-        h('h2', { class: 'display sm', style: { marginBottom: '10px' } }, 'Where to focus'),
+      scan.side ? h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
+        h('div', { class: 'card-h' },
+          h('div', { class: 'eyebrow' }, 'Side profile \u00b7 beta'),
+          h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } }, scan.side.score.toFixed(1))),
+        h('p', { class: 'small' }, 'Read from your side photo. Approximate by nature, and not counted in your overall score.'),
+        h('div', { class: 'row between mt-12' },
+          h('span', { class: 'small' }, 'Jaw line'),
+          h('span', { class: 'display sm mono' }, scan.side.jawline.toFixed(1) + '\u00b0')),
+        h('div', { class: 'row between mt-8' },
+          h('span', { class: 'small' }, 'Chin projection'),
+          h('span', { class: 'display sm mono' }, scan.side.projection.toFixed(1) + '\u00b0'))) : null,
+
+      h('div', { class: 'mt-20 rise', style: { '--i': 3 } },
+        h('h2', { class: 'display sm', style: { marginBottom: '10px' } }, T('Where to focus')),
         h('div', { class: 'list' }, (scan.focus || []).map((f) => h('div', { class: 'item' },
           h('span', { class: 'ico' }, h('span', { html: I.bolt, style: { width: '16px', height: '16px', display: 'grid' } })),
           h('div', { class: 'txt' },
@@ -1424,19 +1538,19 @@
             h('div', { class: 's' }, f.tip)),
           h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } }, f.score.toFixed(1)))))),
       h('div', { class: 'row gap-10 mt-20 rise', style: { '--i': 3 } },
-        h('button', { class: 'btn ghost', onclick: () => go('routine') }, 'Your routine'),
-        h('button', { class: 'btn primary', onclick: () => go('scan') }, 'Scan again'))
+        h('button', { class: 'btn ghost', onclick: () => go('routine') }, T('Your routine')),
+        h('button', { class: 'btn primary', onclick: () => go('scan') }, T('Scan again')))
     );
     return wrap;
   }
 
   function scoreWord(v) {
-    if (v >= 9) return 'Exceptional';
-    if (v >= 8) return 'Strong';
-    if (v >= 7) return 'Good';
-    if (v >= 6) return 'Solid';
-    if (v >= 5) return 'Average';
-    return 'Room to work';
+    if (v >= 9) return T('Exceptional');
+    if (v >= 8) return T('Strong');
+    if (v >= 7) return T('Good');
+    if (v >= 6) return T('Solid');
+    if (v >= 5) return T('Average');
+    return T('Room to work');
   }
 
   function ratingsTab(scan) {
@@ -1449,11 +1563,11 @@
             : h('div', { style: { width: '92px', height: '92px', borderRadius: '50%', background: 'var(--surface-2)', display: 'grid', placeItems: 'center' } },
                 h('span', { html: I.profile, style: { width: '30px', height: '30px', color: 'var(--muted)', display: 'grid' } })),
           h('div', {},
-            h('p', { class: 'eyebrow' }, 'Overall'),
+            h('p', { class: 'eyebrow' }, T('Overall')),
             h('div', { class: 'display xl mono' }, scan.overall.toFixed(1)),
             h('p', { class: 'small' }, 'of 10 \u00b7 ' + (scan.details || []).length + ' measurements')))),
       h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
-        h('div', { class: 'eyebrow', style: { marginBottom: '6px' } }, 'Every measurement'),
+        h('div', { class: 'eyebrow', style: { marginBottom: '6px' } }, T('Every measurement')),
         E.PILLARS.map((p) => {
           const rows = byPillar[p.id] || [];
           if (!rows.length) return null;
@@ -1461,7 +1575,7 @@
             h('div', { class: 'row between', style: { marginBottom: '4px' } },
               h('span', { class: 'small', style: { color: 'var(--ink)', fontWeight: '600' } }, p.label),
               h('span', { class: 'tiny mono' }, scan.pillars[p.id] != null ? scan.pillars[p.id].toFixed(1) : '\u2014')),
-            rows.map((d) => h('div', { class: 'metric' },
+            rows.map((d) => h('div', { class: 'metric tap', onclick: () => openMetric(scan, d) },
               h('div', { class: 'mt' }, h('div', { class: 'mn' }, d.label), h('div', { class: 'mv' }, d.valueLabel)),
               h('div', { class: 'mb' }, h('div', { class: 'bar thin', style: { '--w': d.score / 10 } }, h('i', {}))),
               h('div', { class: 'ms' }, d.score.toFixed(1)))));
@@ -1477,7 +1591,7 @@
     return h('div', {},
       h('div', { class: 'card rise', style: { '--i': 0 } },
         h('div', { class: 'card-h' },
-          h('div', { class: 'eyebrow' }, 'Skin signals'),
+          h('div', { class: 'eyebrow' }, T('Skin signals')),
           h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } },
             scan.pillars.skin != null ? scan.pillars.skin.toFixed(1) : '\u2014')),
         skinRows.length ? skinRows.map((d) => h('div', { class: 'metric' },
@@ -1488,7 +1602,7 @@
         h('p', { class: 'tiny mt-12' }, 'Read from the pixels of this one photo: tone variance, redness, under-eye contrast, shine and texture. It is an appearance estimate, not a measurement of your skin.')),
 
       h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
-        h('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, 'What to do next'),
+        h('div', { class: 'eyebrow', style: { marginBottom: '10px' } }, T('What to do next')),
         routine.slice(0, 3).map((s) => h('div', { class: 'item' },
           h('span', { class: 'ico' }, h('span', { html: I.check, style: { width: '15px', height: '15px', display: 'grid' } })),
           h('div', { class: 'txt' }, h('div', { class: 't' }, s.title), h('div', { class: 's' }, s.note))))),
@@ -1499,9 +1613,493 @@
           h('span', { style: { fontWeight: '600', fontSize: '13.5px' } }, 'Cosmetic insight only')),
         h('p', { class: 'small' }, 'Lumorph does not diagnose, treat or screen for any condition. If something on your skin worries you, see a dermatologist.')),
       h('div', { class: 'row gap-10 mt-20 rise', style: { '--i': 3 } },
-        h('button', { class: 'btn ghost', onclick: () => go('how') }, 'How this is scored'),
-        h('button', { class: 'btn primary', onclick: () => go('routine') }, 'Open routine'))
+        h('button', { class: 'btn ghost', onclick: () => go('how') }, T('How this is scored')),
+        h('button', { class: 'btn primary', onclick: () => go('routine') }, T('Open routine')))
     );
+  }
+
+  /* ---------- share card ---------- */
+  const SERIF = '"Instrument Serif", Georgia, serif';
+  const SANS = 'Inter, -apple-system, sans-serif';
+
+  function roundRect(ctx, x, y, w, hh, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + hh, r);
+    ctx.arcTo(x + w, y + hh, x, y + hh, r);
+    ctx.arcTo(x, y + hh, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function paintBackground(ctx, W, H) {
+    ctx.fillStyle = '#07070A';
+    ctx.fillRect(0, 0, W, H);
+
+    let g = ctx.createRadialGradient(W * 0.22, H * 0.06, 0, W * 0.22, H * 0.06, W * 0.95);
+    g.addColorStop(0, 'rgba(198,161,103,0.34)');
+    g.addColorStop(0.45, 'rgba(198,161,103,0.10)');
+    g.addColorStop(1, 'rgba(198,161,103,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    g = ctx.createRadialGradient(W * 0.92, H * 0.04, 0, W * 0.92, H * 0.04, W * 0.7);
+    g.addColorStop(0, 'rgba(120,96,200,0.24)');
+    g.addColorStop(1, 'rgba(120,96,200,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    g = ctx.createRadialGradient(W * 0.5, H * 1.02, 0, W * 0.5, H * 1.02, W * 0.9);
+    g.addColorStop(0, 'rgba(234,213,162,0.16)');
+    g.addColorStop(1, 'rgba(234,213,162,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawOrb(ctx, x, y, r) {
+    const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r);
+    g.addColorStop(0, '#FFFBEF');
+    g.addColorStop(0.42, '#EAD5A2');
+    g.addColorStop(0.78, '#C6A167');
+    g.addColorStop(1, '#7A5C28');
+    ctx.save();
+    ctx.shadowColor = 'rgba(234,213,162,0.45)';
+    ctx.shadowBlur = r * 2.2;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  async function ensureFonts() {
+    if (!document.fonts || !document.fonts.load) return;
+    try {
+      await Promise.all([
+        document.fonts.load('400 120px "Instrument Serif"'),
+        document.fonts.load('italic 400 120px "Instrument Serif"'),
+        document.fonts.load('500 28px Inter'),
+        document.fonts.load('600 28px Inter')
+      ]);
+    } catch (e) { /* fall back to system fonts */ }
+  }
+
+  function scoreWordFor(v) {
+    if (v >= 9) return T('Exceptional');
+    if (v >= 8) return T('Strong');
+    if (v >= 7) return T('Good');
+    if (v >= 6) return T('Solid');
+    if (v >= 5) return T('Average');
+    return T('Room to work');
+  }
+
+  async function buildShareCard(scan) {
+    const W = 1080, H = 1350;
+    await ensureFonts();
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    paintBackground(ctx, W, H);
+
+    const pad = 84;
+
+    // brand
+    drawOrb(ctx, pad + 16, pad + 16, 15);
+    ctx.fillStyle = '#F6F1E7';
+    ctx.font = '400 40px ' + SERIF;
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Lumorph', pad + 46, pad + 18);
+
+    // date
+    ctx.fillStyle = 'rgba(155,150,140,0.95)';
+    ctx.font = '500 22px ' + SANS;
+    ctx.textAlign = 'right';
+    ctx.fillText(new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), W - pad, pad + 18);
+    ctx.textAlign = 'left';
+
+    // score
+    const grad = ctx.createLinearGradient(0, 240, W * 0.7, 620);
+    grad.addColorStop(0, '#FFF6DF');
+    grad.addColorStop(0.5, '#EAD5A2');
+    grad.addColorStop(1, '#C6A167');
+
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = grad;
+    ctx.font = '400 340px ' + SERIF;
+    const scoreTxt = scan.overall.toFixed(1);
+    ctx.fillText(scoreTxt, pad - 6, 620);
+
+    const scoreW = ctx.measureText(scoreTxt).width;
+    ctx.fillStyle = 'rgba(155,150,140,0.9)';
+    ctx.font = '500 26px ' + SANS;
+    ctx.fillText('out of 10', pad + scoreW + 26, 560);
+
+    ctx.fillStyle = '#F6F1E7';
+    ctx.font = '400 62px ' + SERIF;
+    ctx.fillText(scoreWordFor(scan.overall), pad + scoreW + 26, 616);
+
+    // pillars
+    const pillars = [
+      ['harmony', T('Harmony')],
+      ['angularity', T('Angularity')],
+      ['dimorphism', T('Dimorphism')],
+      ['features', T('Features')],
+      ['skin', T('Skin signals')]
+    ].filter(([id]) => scan.pillars[id] != null);
+
+    let y = 760;
+    const barX = pad + 250, barW = W - pad - barX - 90;
+    pillars.forEach(([id, label]) => {
+      const v = scan.pillars[id];
+      ctx.fillStyle = 'rgba(246,241,231,0.92)';
+      ctx.font = '500 26px ' + SANS;
+      ctx.fillText(label, pad, y + 8);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.09)';
+      roundRect(ctx, barX, y - 6, barW, 12, 6);
+      ctx.fill();
+
+      const g2 = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+      g2.addColorStop(0, '#8C6B33');
+      g2.addColorStop(0.55, '#EAD5A2');
+      g2.addColorStop(1, '#FFF3D6');
+      ctx.fillStyle = g2;
+      roundRect(ctx, barX, y - 6, Math.max(12, barW * (v / 10)), 12, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#EAD5A2';
+      ctx.font = '400 30px ' + SERIF;
+      ctx.textAlign = 'right';
+      ctx.fillText(v.toFixed(1), W - pad, y + 10);
+      ctx.textAlign = 'left';
+      y += 72;
+    });
+
+    // streak strip
+    const st = streak();
+    if (st > 0) {
+      ctx.fillStyle = 'rgba(234,213,162,0.12)';
+      roundRect(ctx, pad, H - 220, 300, 62, 31);
+      ctx.fill();
+      ctx.fillStyle = '#EAD5A2';
+      ctx.font = '600 26px ' + SANS;
+      ctx.fillText(st + (st === 1 ? ' day streak' : ' day streak'), pad + 28, H - 180);
+    }
+
+    // footer
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(pad, H - 118, W - pad * 2, 1);
+    ctx.fillStyle = 'rgba(155,150,140,0.85)';
+    ctx.font = '500 22px ' + SANS;
+    ctx.fillText('lumorph.vercel.app', pad, H - 66);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(198,161,103,0.9)';
+    ctx.fillText('lookmaxxing, free for everyone', W - pad, H - 66);
+    ctx.textAlign = 'left';
+
+    return cv;
+  }
+
+  async function shareResult(scan) {
+    try {
+      const cv = await buildShareCard(scan);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+      if (!blob) { toast('Could not build the card'); return; }
+      const file = new File([blob], 'lumorph-' + todayKey() + '.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Lumorph' });
+          return;
+        } catch (e) {
+          if (e && e.name === 'AbortError') return;
+        }
+      }
+      const a = h('a', { href: URL.createObjectURL(blob), download: 'lumorph-' + todayKey() + '.png' });
+      document.body.append(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 600);
+      toast('Card saved');
+    } catch (e) {
+      toast('Could not build the card');
+    }
+  }
+
+  /* ---------- metric detail ---------- */
+  function openMetric(scan, d) {
+    const pts = E.METRIC_POINTS[d.id] || [];
+    const body = h('div', {});
+
+    const cv = h('canvas', { class: 'metric-canvas' });
+    body.append(cv);
+
+    const img = new Image();
+    img.onload = () => {
+      const W = 700;
+      const H = Math.round((img.height / img.width) * W) || Math.round(W * 1.33);
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0, W, H);
+
+      // dim everything but the measurement
+      ctx.fillStyle = 'rgba(7,7,10,0.45)';
+      ctx.fillRect(0, 0, W, H);
+
+      const lm = E.decodeLandmarks(scan.lm);
+      if (lm && pts.length) {
+        const p = pts.map((i) => ({ x: lm[i].x * W, y: lm[i].y * H }));
+        ctx.strokeStyle = 'rgba(234,213,162,0.95)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(234,213,162,0.8)';
+        ctx.shadowBlur = 12;
+        if (p.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(p[0].x, p[0].y);
+          for (let i = 1; i < p.length; i++) ctx.lineTo(p[i].x, p[i].y);
+          ctx.stroke();
+        }
+        p.forEach((pt) => {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFF6DF';
+          ctx.fill();
+        });
+      } else {
+        ctx.fillStyle = 'rgba(246,241,231,0.8)';
+        ctx.font = '500 22px ' + SANS;
+        ctx.textAlign = 'center';
+        ctx.fillText('Re-scan to see this drawn', W / 2, H / 2);
+      }
+    };
+    if (scan.thumb) {
+      img.src = scan.thumb;
+    } else {
+      cv.width = 700; cv.height = 500;
+      const c0 = cv.getContext('2d');
+      c0.fillStyle = '#0B0B10'; c0.fillRect(0, 0, 700, 500);
+      c0.fillStyle = 'rgba(246,241,231,0.55)';
+      c0.font = '500 22px ' + SANS;
+      c0.textAlign = 'center';
+      c0.fillText('Take a real scan to see this drawn', 350, 250);
+    }
+
+    body.append(
+      h('div', { class: 'metric-read' },
+        h('span', { class: 'big' }, d.score.toFixed(1)),
+        h('span', { class: 'small' }, T('out of 10') + ' \u00b7 ' + d.valueLabel)),
+      h('p', { class: 'small mt-12' }, d.tip || ''),
+      h('button', { class: 'btn ghost mt-20', onclick: closeSheet }, 'Close')
+    );
+
+    openSheet(h('div', {},
+      h('p', { class: 'eyebrow' }, T('Every measurement')),
+      h('h2', { class: 'display sm', style: { marginTop: '6px' } }, d.label),
+      h('div', { class: 'mt-16' }, body)));
+  }
+
+  /* ---------- weekly recap ---------- */
+  function weekStats() {
+    const now = Date.now();
+    const week = 7 * 86400000;
+    const recent = S.scans.filter((s) => now - s.ts <= week);
+    const before = S.scans.filter((s) => now - s.ts > week && now - s.ts <= week * 2);
+    const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b.overall, 0) / arr.length : null;
+    const a1 = avg(recent), a0 = avg(before);
+    const quests = Object.keys(S.quests).filter((k) => {
+      const t = new Date(k).getTime();
+      return now - t <= week && QUESTS.some((q) => S.quests[k][q.id]);
+    }).length;
+    let bestPillar = null;
+    if (recent.length && before.length) {
+      E.PILLARS.forEach((p) => {
+        const d = avg(recent.map((s) => ({ overall: s.pillars[p.id] || 0 }))) - avg(before.map((s) => ({ overall: s.pillars[p.id] || 0 })));
+        if (d > 0 && (!bestPillar || d > bestPillar.d)) bestPillar = { label: p.label, d };
+      });
+    }
+    return {
+      scans: recent.length,
+      avg: a1,
+      delta: (a1 != null && a0 != null) ? a1 - a0 : null,
+      quests,
+      bestPillar,
+      streak: streak()
+    };
+  }
+
+  function openRecap() {
+    const w = weekStats();
+    const row = (k, v) => h('div', { class: 'recap-row' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v));
+    openSheet(h('div', {},
+      h('p', { class: 'eyebrow' }, 'Last seven days'),
+      h('h2', { class: 'display sm', style: { marginTop: '6px' } }, 'Your week'),
+      h('div', { class: 'mt-12' },
+        row('Scans taken', String(w.scans)),
+        row('Average score', w.avg != null ? w.avg.toFixed(1) : '\u2014'),
+        row('Change', w.delta != null ? (w.delta >= 0 ? '+' : '') + w.delta.toFixed(1) : 'Need two weeks'),
+        row('Days cleared', w.quests + ' of 7'),
+        row('Current streak', w.streak + ' days'),
+        w.bestPillar ? row('Biggest gain', w.bestPillar.label + ' +' + w.bestPillar.d.toFixed(1)) : null),
+      h('p', { class: 'tiny mt-16' }, 'A week is short. Two scans in the same light tell you more than five taken in different rooms.'),
+      h('button', { class: 'btn primary mt-20', onclick: closeSheet }, 'Close')));
+  }
+
+  /* ---------- report ---------- */
+  function buildPdf(jpeg, imgW, imgH, pageW, pageH) {
+    const enc = new TextEncoder();
+    const parts = [];
+    let len = 0;
+    const put = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+    const offsets = [];
+    const obj = (n, body) => { offsets[n] = len; put(n + ' 0 obj\n' + body + '\nendobj\n'); };
+
+    put('%PDF-1.4\n%\u00E2\u00E3\u00CF\u00D3\n');
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pageW + ' ' + pageH + '] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>');
+    const content = 'q ' + pageW + ' 0 0 ' + pageH + ' 0 0 cm /Im0 Do Q';
+    obj(4, '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream');
+
+    offsets[5] = len;
+    put('5 0 obj\n');
+    put('<< /Type /XObject /Subtype /Image /Width ' + imgW + ' /Height ' + imgH +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpeg.length + ' >>\nstream\n');
+    put(jpeg);
+    put('\nendstream\nendobj\n');
+
+    const xref = len;
+    put('xref\n0 6\n0000000000 65535 f \n');
+    for (let i = 1; i <= 5; i++) put(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
+    put('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  async function buildReport(scan) {
+    const W = 1240, H = 1754;
+    await ensureFonts();
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#F7F4ED';
+    ctx.fillRect(0, 0, W, H);
+
+    const pad = 90;
+    // header band
+    const g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, '#0B0B10');
+    g.addColorStop(1, '#171410');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, 300);
+
+    drawOrb(ctx, pad + 18, 118, 16);
+    ctx.fillStyle = '#F6F1E7';
+    ctx.font = '400 44px ' + SERIF;
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Lumorph', pad + 50, 120);
+    ctx.fillStyle = 'rgba(198,161,103,0.95)';
+    ctx.font = '500 18px ' + SANS;
+    ctx.fillText('FACE & SKIN REPORT', pad + 50, 156);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(246,241,231,0.75)';
+    ctx.font = '500 18px ' + SANS;
+    ctx.fillText(new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }), W - pad, 120);
+    if (S.profile) ctx.fillText(S.profile.name, W - pad, 152);
+    ctx.textAlign = 'left';
+
+    // score block
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#1A1815';
+    ctx.font = '400 190px ' + SERIF;
+    ctx.fillText(scan.overall.toFixed(1), pad - 6, 520);
+    const sw = ctx.measureText(scan.overall.toFixed(1)).width;
+    ctx.fillStyle = '#6B655C';
+    ctx.font = '500 22px ' + SANS;
+    ctx.fillText('out of 10', pad + sw + 20, 470);
+    ctx.fillStyle = '#1A1815';
+    ctx.font = '400 44px ' + SERIF;
+    ctx.fillText(scoreWordFor(scan.overall), pad + sw + 20, 520);
+
+    // pillars
+    let y = 640;
+    ctx.fillStyle = '#8C6A2A';
+    ctx.font = '600 14px ' + SANS;
+    ctx.fillText('PILLARS', pad, y);
+    y += 46;
+    E.PILLARS.forEach((p) => {
+      const v = scan.pillars[p.id];
+      if (v == null) return;
+      ctx.fillStyle = '#1A1815';
+      ctx.font = '500 22px ' + SANS;
+      ctx.fillText(p.label, pad, y + 6);
+      ctx.fillStyle = 'rgba(26,24,21,0.10)';
+      roundRect(ctx, pad + 240, y - 8, W - pad * 2 - 320, 10, 5);
+      ctx.fill();
+      ctx.fillStyle = '#8C6A2A';
+      roundRect(ctx, pad + 240, y - 8, Math.max(10, (W - pad * 2 - 320) * (v / 10)), 10, 5);
+      ctx.fill();
+      ctx.fillStyle = '#1A1815';
+      ctx.font = '400 24px ' + SERIF;
+      ctx.textAlign = 'right';
+      ctx.fillText(v.toFixed(1), W - pad, y + 8);
+      ctx.textAlign = 'left';
+      y += 56;
+    });
+
+    // history
+    y += 40;
+    ctx.fillStyle = '#8C6A2A';
+    ctx.font = '600 14px ' + SANS;
+    ctx.fillText('RECENT SCANS', pad, y);
+    y += 44;
+    const rows = S.scans.slice(-8).reverse();
+    rows.forEach((s) => {
+      ctx.fillStyle = '#3A362F';
+      ctx.font = '500 19px ' + SANS;
+      ctx.fillText(new Date(s.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), pad, y);
+      ctx.fillStyle = '#1A1815';
+      ctx.font = '400 24px ' + SERIF;
+      ctx.textAlign = 'right';
+      ctx.fillText(s.overall.toFixed(1), W - pad, y);
+      ctx.textAlign = 'left';
+      ctx.strokeStyle = 'rgba(26,24,21,0.10)';
+      ctx.beginPath(); ctx.moveTo(pad, y + 16); ctx.lineTo(W - pad, y + 16); ctx.stroke();
+      y += 44;
+    });
+
+    // footer
+    ctx.strokeStyle = 'rgba(26,24,21,0.12)';
+    ctx.beginPath(); ctx.moveTo(pad, H - 150); ctx.lineTo(W - pad, H - 150); ctx.stroke();
+    ctx.fillStyle = '#6B655C';
+    ctx.font = '500 16px ' + SANS;
+    ctx.fillText('lumorph.vercel.app', pad, H - 108);
+    ctx.textAlign = 'right';
+    ctx.fillText('Appearance guidance, not medical advice.', W - pad, H - 108);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(107,101,92,0.75)';
+    ctx.font = '400 15px ' + SANS;
+    ctx.fillText('Scores describe this photograph, not you. Light, angle and expression move them.', pad, H - 78);
+
+    return cv;
+  }
+
+  async function downloadReport(scan) {
+    try {
+      const cv = await buildReport(scan);
+      const dataUrl = cv.toDataURL('image/jpeg', 0.9);
+      const b64 = dataUrl.split(',')[1];
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = buildPdf(bytes, cv.width, cv.height, 595, 842);
+      const a = h('a', { href: URL.createObjectURL(blob), download: 'lumorph-report-' + todayKey() + '.pdf' });
+      document.body.append(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+      toast('Report saved');
+    } catch (e) {
+      toast('Could not build the report');
+    }
   }
 
   /* ---------- routine ---------- */
@@ -1561,21 +2159,21 @@
           BADGES.filter((b) => S.badges && S.badges[b.id]).map((b) =>
             h('span', { class: 'pill badge-pill' }, h('span', { class: 'dot' }), b.label)))),
 
-      h('p', { class: 'eyebrow mt-28 rise', style: { '--i': 1 } }, 'About you'),
+      h('p', { class: 'eyebrow mt-28 rise', style: { '--i': 1 } }, T('About you')),
       h('div', { class: 'card mt-12 rise', style: { '--i': 2 } },
         h('div', { class: 'row between' },
-          kv('Gender', (S.profile.gender || '\u2014').replace(/^./, (m) => m.toUpperCase())),
-          kv('Age', S.profile.birth ? String(ageFrom(S.profile.birth)) : '\u2014'),
-          kv('Height', S.profile.height + ' cm'))),
+          kv(T('Gender'), (S.profile.gender || '\u2014').replace(/^./, (m) => m.toUpperCase())),
+          kv(T('Age'), S.profile.birth ? String(ageFrom(S.profile.birth)) : '\u2014'),
+          kv(T('Height'), S.profile.height + ' cm'))),
 
-      h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 3 } }, 'Skin'),
+      h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 3 } }, T('Skin')),
       h('div', { class: 'card mt-12 rise', style: { '--i': 4 } },
         h('div', { class: 'item', style: { padding: '6px 0' } },
           h('span', { class: 'ico' }, h('span', { html: I.drop, style: { width: '18px', height: '18px', display: 'grid' } })),
-          h('div', { class: 'txt' }, h('div', { class: 't' }, t || 'Balanced'), h('div', { class: 's' }, 'Skin type'))),
+          h('div', { class: 'txt' }, h('div', { class: 't' }, t || T('Balanced')), h('div', { class: 's' }, 'Skin type'))),
         h('div', { class: 'item', style: { padding: '6px 0' } },
           h('span', { class: 'ico' }, h('span', { html: I.target, style: { width: '18px', height: '18px', display: 'grid' } })),
-          h('div', { class: 'txt' }, h('div', { class: 't' }, c || 'General maintenance'), h('div', { class: 's' }, 'Focus')))),
+          h('div', { class: 'txt' }, h('div', { class: 't' }, c || T('General maintenance')), h('div', { class: 's' }, T('Focus'))))),
 
       h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 5 } }, 'Account'),
       h('div', { class: 'card mt-12 rise', style: { '--i': 6 } },
@@ -1757,27 +2355,38 @@
         h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'Settings & ', h('em', {}, 'Privacy'))),
 
       /* appearance */
-      h('p', { class: 'sect rise', style: { '--i': 1 } }, 'Appearance'),
+      h('p', { class: 'sect rise', style: { '--i': 1 } }, T('Appearance')),
       h('div', { class: 'rise', style: { '--i': 2 } },
         tileSeg([
-          { id: 'dark', label: 'Dark', icon: I.moon },
-          { id: 'light', label: 'Light', icon: I.sun },
-          { id: 'system', label: 'System', icon: I.gear }
+          { id: 'dark', label: T('Dark'), icon: I.moon },
+          { id: 'light', label: T('Light'), icon: I.sun },
+          { id: 'system', label: T('System'), icon: I.gear }
         ], S.theme, (id) => { S.theme = id; save(); applyTheme(); })),
 
       /* selfie photos */
-      h('p', { class: 'sect rise', style: { '--i': 3 } }, 'Selfie photos'),
+      h('p', { class: 'sect rise', style: { '--i': 2.5 } }, T('Language')),
+      h('div', { class: 'rise', style: { '--i': 2.6 } },
+        tileSeg((I18N ? I18N.languages : [{ id: 'en', label: 'English' }]).map((l) => ({
+          id: l.id, label: l.label, icon: I.globe
+        })), (S.settings.lang || 'en'), (id) => {
+          S.settings.lang = id;
+          if (I18N) I18N.set(id);
+          save();
+          go('settings');
+        })),
+
+      h('p', { class: 'sect rise', style: { '--i': 3 } }, T('Selfie photos')),
       h('div', { class: 'rise', style: { '--i': 4 } },
         tileSeg([
-          { id: 'auto', label: 'Automatic', icon: I.sparkle },
-          { id: 'flipped', label: 'Flipped', icon: I.flip },
-          { id: 'as-is', label: 'As saved', icon: I.image }
+          { id: 'auto', label: T('Automatic'), icon: I.sparkle },
+          { id: 'flipped', label: T('Flipped'), icon: I.flip },
+          { id: 'as-is', label: T('As saved'), icon: I.image }
         ], (S.settings.mirror || 'auto'), (id) => { S.settings.mirror = id; save(); toast(id === 'flipped' ? 'Camera photos will be flipped' : id === 'as-is' ? 'Photos saved exactly as captured' : 'Handled automatically'); })),
       h('p', { class: 'helper rise', style: { '--i': 5 } },
         'If a photo from your camera looks reversed next to the live preview, choose Flipped. Photos you upload are never changed.'),
 
       /* notifications */
-      h('p', { class: 'sect rise', style: { '--i': 6 } }, 'Notifications'),
+      h('p', { class: 'sect rise', style: { '--i': 6 } }, T('Notifications')),
       perm === 'granted'
         ? h('div', { class: 'group rise', style: { '--i': 7 } },
             growRow({
@@ -1799,7 +2408,7 @@
               right: switchEl(n.streak, (v) => { n.streak = v; save(); })
             }),
             growRow({
-              icon: I.refresh, title: 'Weekly re-scan',
+              icon: I.refresh, title: T('Weekly re-scan'),
               sub: 'Sunday morning reminder to take the next scan.',
               right: switchEl(n.weekly, (v) => { n.weekly = v; save(); })
             })
@@ -1815,7 +2424,7 @@
             })),
 
       /* scores & legal */
-      h('p', { class: 'sect rise', style: { '--i': 8 } }, 'Scores & legal'),
+      h('p', { class: 'sect rise', style: { '--i': 8 } }, T('Scores & legal')),
       h('div', { class: 'group rise', style: { '--i': 9 } },
         growRow({ icon: I.sigma, title: 'How we calculate your scores', sub: 'What each score measures, and what it cannot tell you.', chev: true, onClick: () => go('how') }),
         growRow({ icon: I.doc, title: 'Privacy Policy', sub: 'What is stored, and where it lives.', chev: true, onClick: () => openDoc('privacy') }),
@@ -1825,22 +2434,22 @@
       ),
 
       /* promo */
-      h('p', { class: 'sect rise', style: { '--i': 10 } }, 'Promo'),
+      h('p', { class: 'sect rise', style: { '--i': 10 } }, T('Promo')),
       h('div', { class: 'group rise', style: { '--i': 11 } },
-        growRow({ icon: I.gift, title: 'Redeem a promo code', sub: 'Got a code from a creator or a friend?', chev: true, onClick: redeemPromo })),
+        growRow({ icon: I.gift, title: T('Redeem a promo code'), sub: 'Got a code from a creator or a friend?', chev: true, onClick: redeemPromo })),
 
       /* subscription */
-      h('p', { class: 'sect rise', style: { '--i': 12 } }, 'Subscription'),
+      h('p', { class: 'sect rise', style: { '--i': 12 } }, T('Subscription')),
       h('div', { class: 'group rise', style: { '--i': 13 } },
-        growRow({ icon: I.check, title: 'No subscription. Ever.', sub: 'There is nothing to buy, restore or cancel.', tick: true })),
+        growRow({ icon: I.check, title: T('No subscription. Ever.'), sub: 'There is nothing to buy, restore or cancel.', tick: true })),
 
       /* data */
-      h('p', { class: 'sect rise', style: { '--i': 14 } }, 'Data & account'),
+      h('p', { class: 'sect rise', style: { '--i': 14 } }, T('Data & account')),
       h('div', { class: 'group rise', style: { '--i': 15 } },
-        growRow({ icon: I.braces, title: 'Export as JSON', sub: 'Every scan, measurement and quest.', down: true, onClick: exportJson }),
-        growRow({ icon: I.table, title: 'Export as spreadsheets', sub: 'The same data as CSV, one file per table.', down: true, onClick: exportCsv })),
+        growRow({ icon: I.braces, title: T('Export as JSON'), sub: 'Every scan, measurement and quest.', down: true, onClick: exportJson }),
+        growRow({ icon: I.table, title: T('Export as spreadsheets'), sub: 'The same data as CSV, one file per table.', down: true, onClick: exportCsv })),
       h('div', { class: 'group rise', style: { '--i': 16, marginTop: '14px' } },
-        growRow({ icon: I.trash, title: 'Delete all data', sub: 'Permanently removes every scan from this device.', danger: true, chev: true, onClick: confirmWipe })),
+        growRow({ icon: I.trash, title: T('Delete all data'), sub: 'Permanently removes every scan from this device.', danger: true, chev: true, onClick: confirmWipe })),
 
       h('p', { class: 'tiny center mt-20 rise', style: { '--i': 17 } },
         'Lumorph v2 \u00b7 free, offline, no accounts')
@@ -1896,7 +2505,7 @@
     deletion: {
       title: 'How deletion works',
       body: [
-        ['h', 'Delete all data'],
+        ['h', T('Delete all data')],
         ['p', 'Settings, then Delete all data. Every scan, thumbnail, quest and profile answer is erased from this browser in the same moment. There is no copy anywhere else, so there is nothing left to recover.'],
         ['h', 'What goes'],
         ['p', 'Your profile, all scans and their thumbnails, the quest history, XP and ranks, your consent record and your notification preferences.'],
@@ -1965,7 +2574,7 @@
     };
 
     openSheet(h('div', {},
-      h('h2', { class: 'display sm' }, 'Redeem a promo code'),
+      h('h2', { class: 'display sm' }, T('Redeem a promo code')),
       h('p', { class: 'small mt-12' }, 'Lumorph has nothing to sell, so a code never unlocks a paid feature. Codes are 4 to 8 characters, come from a creator or a friend, and work once per device.'),
       h('div', { class: 'mt-16' }, input),
       msg,
@@ -2048,7 +2657,7 @@
           'The numbers describe your photo, not you. They say nothing about your worth, and Lumorph never compares you with another person.'))),
 
       h('div', { class: 'rise', style: { '--i': 2 } },
-        sec('Face analysis', [
+        sec(T('Face analysis'), [
           'Lumorph measures proportions of your face from one front photo: how the parts of the face relate to each other in width, height and angle. Everything runs on this device.',
           'Google\u2019s MediaPipe Face Landmarker finds 478 points on your face. The points are used to compute the measurements and are then discarded \u2014 never uploaded, never stored, never written to disk.',
           'While you hold still before capture, several frames are averaged so the measurements do not jitter. If you upload a photo instead, the numbers come from that single frame.'
@@ -2065,7 +2674,7 @@
           'A group score is the average of its measurements. The overall score is the weighted average of the groups, rounded to one decimal.',
           'The same photo always produces the same score. There is no randomness and no model adjusting the result.'
         ]),
-        sec('Skin signals', [
+        sec(T('Skin signals'), [
           'The skin score is an appearance rating of the photograph, not a measurement of your skin. No hydration, oil, blood flow, UV or any other bodily value is read, computed or stored.',
           'Five signals are read from the pixels: tone variance across the cheeks and forehead, redness, under-eye contrast, T-zone shine, and high-frequency texture. It is deterministic arithmetic on the image.',
           'Because it reads a photo, light, camera, lens and make-up move these numbers as much as your skin does. Treat them as a rough trend line for your own photos over time.'
@@ -2090,7 +2699,7 @@
 
       h('div', { class: 'row gap-10 mt-20 rise', style: { '--i': 3 } },
         h('button', { class: 'btn ghost', onclick: () => go('settings') }, 'Back to settings'),
-        h('button', { class: 'btn primary', onclick: () => go('home') }, 'Home'))
+        h('button', { class: 'btn primary', onclick: () => go('home') }, T('Home')))
     );
   };
 
@@ -2173,6 +2782,8 @@
 
   /* ---------------- boot ---------------- */
   load();
+  S.settings = S.settings || {};
+  if (I18N) I18N.set(S.settings.lang || 'en');
   const themeParam = (location.search.match(/theme=(dark|light|system)/) || [])[1];
   if (themeParam) S.theme = themeParam;
   applyTheme();

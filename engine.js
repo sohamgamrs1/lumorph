@@ -254,6 +254,122 @@
     return { redness, evenness, underEye, shine, texture };
   }
 
+  /* ---------- lighting normalisation ----------
+     A photo taken in a dim room should not score as worse skin than the same
+     face by a window. Before the skin signals are read, exposure is pulled
+     toward a target and contrast is gently flattened, so the numbers track
+     the face rather than the lamp. */
+  function normalise(img, target) {
+    const w = img.naturalWidth || img.videoWidth || img.width;
+    const h = img.naturalHeight || img.videoHeight || img.height;
+    if (!w || !h) return img;
+
+    const S = 320;
+    const cv = document.createElement('canvas');
+    cv.width = S;
+    cv.height = Math.round((S * h) / w);
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+
+    let data;
+    try { data = ctx.getImageData(0, 0, cv.width, cv.height); } catch (e) { return img; }
+    const px = data.data;
+    let sum = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      sum += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+    }
+    const mean = (sum / (px.length / 4)) / 255;
+    const want = target == null ? 0.56 : target;
+    if (mean < 0.02) return img;
+
+    // gain toward the target, damped so a badly lit photo is corrected, not invented
+    const gain = Math.min(1.85, Math.max(0.62, want / mean));
+    const gamma = mean < want ? 0.92 : 1.06;
+
+    for (let i = 0; i < px.length; i += 4) {
+      for (let c = 0; c < 3; c++) {
+        let v = px[i + c] / 255;
+        v = Math.pow(v, gamma) * gain;
+        px[i + c] = Math.max(0, Math.min(255, v * 255));
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+    return cv;
+  }
+
+  /* ---------- side profile (beta) ----------
+     Read from the side photo. Approximate by nature: a face mesh sees a true
+     profile only roughly, so this is scored on its own and never added to the
+     overall number. */
+  function sideMetrics(lm, w, h) {
+    if (!lm || !lm.length) return null;
+    const g = makeGeo(lm, w, h);
+    const { P, dist, faceH, angleAt } = g;
+
+    // how far the chin sits behind or ahead of the brow, along the face axis
+    const chinDrop = Math.abs(g.vertical(P.chin) - g.vertical(P.nasion));
+    const chinProj = (g.vertical(P.chin) - g.vertical(P.nasion)) / (chinDrop || 1);
+
+    // profile convexity: brow -> subnasale -> chin
+    const convex = angleAt(P.nasion, P.subnasale, P.chin);
+
+    // rough side gonial: gonion -> chin against gonion -> ear line
+    const gonial = angleAt(P.gonionR, P.chin, P.faceR);
+
+    return {
+      chinProjection: convex,
+      jawline: gonial,
+      harmony: 180 - Math.abs(convex - 165) * 1.4
+    };
+  }
+
+  /* ---------- landmarks on the wire ----------
+     Stored as integers 0-999 so a scan can be redrawn later without keeping
+     a second copy of the photo. */
+  function encodeLandmarks(lm) {
+    if (!lm) return '';
+    let out = '';
+    for (let i = 0; i < lm.length; i++) {
+      const x = Math.round(lm[i].x * 999);
+      const y = Math.round(lm[i].y * 999);
+      out += (i ? ';' : '') + x + ',' + y;
+    }
+    return out;
+  }
+  function decodeLandmarks(str) {
+    if (!str) return null;
+    return str.split(';').map((p) => {
+      const [x, y] = p.split(',');
+      return { x: Number(x) / 999, y: Number(y) / 999, z: 0 };
+    });
+  }
+
+  /* which points a measurement is drawn from */
+  const METRIC_POINTS = {
+    symmetry: [33, 263],
+    thirdsDev: [10, 168, 4, 152],
+    fifthsDev: [234, 33, 133, 362, 263, 454],
+    ipdRatio: [33, 263, 234, 454],
+    midfaceRatio: [133, 362, 168, 4],
+    jawCheek: [172, 397, 234, 454],
+    gonialAngle: [234, 172, 152],
+    chinWidth: [132, 361],
+    browHeight: [105, 334, 159, 386],
+    lipFullness: [0, 13, 14, 17],
+    midfaceWidth: [58, 288, 234, 454],
+    canthalTilt: [133, 33, 362, 263],
+    eyeAspect: [159, 145, 386, 374],
+    noseToEyeGap: [98, 327, 133, 362],
+    philtrumChin: [4, 0, 152],
+    lipToNose: [61, 291, 98, 327],
+    vermilionRatio: [0, 13, 14, 17],
+    evenness: [58, 288, 9],
+    redness: [58, 288],
+    underEye: [145, 374, 58, 288],
+    shine: [168, 1],
+    texture: [58, 288]
+  };
+
   /* ---------- the rubric ---------- */
   /* Bands are the first calibration pass. Every number here is meant to be
      tuned against real photos; nothing is hidden from the user. */
@@ -485,8 +601,9 @@
 
   /* ---------- public ---------- */
   global.LumorphEngine = {
-    METRICS, PILLARS, L,
+    METRICS, PILLARS, L, METRIC_POINTS,
     rawMetrics, skinMetrics, score, quality, demoLandmarks,
+    normalise, sideMetrics, encodeLandmarks, decodeLandmarks,
     band, makeGeo
   };
 })(window);
