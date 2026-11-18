@@ -370,6 +370,46 @@
     texture: [58, 288]
   };
 
+  /* ---------- tier ladder ----------
+     The overall score mapped onto the community's tier names. Male and other
+     genders use the normie/chad ladder, female uses the beauty/stacy ladder. */
+  const TIERS = [
+    { upTo: 2,      m: ['Sub 3', 'S3'],           f: ['Sub 3', 'S3'],            band: 'below 2' },
+    { upTo: 3,      m: ['Sub 5', 'S5'],           f: ['Sub 5', 'S5'],            band: '2 \u2013 3' },
+    { upTo: 4,      m: ['Low Tier Normie', 'LTN'], f: ['Low Tier Beauty', 'LTB'], band: '3 \u2013 4' },
+    { upTo: 5,      m: ['Mid Tier Normie', 'MTN'], f: ['Mid Tier Beauty', 'MTB'], band: '4 \u2013 5' },
+    { upTo: 7,      m: ['High Tier Normie', 'HTN'], f: ['High Tier Beauty', 'HTB'], band: '5 \u2013 7' },
+    { upTo: 8,      m: ['Chad Lite', 'CL'],       f: ['Stacy Lite', 'SL'],       band: '7 \u2013 8' },
+    { upTo: 9,      m: ['Chad', 'C'],             f: ['Stacy', 'S'],             band: '8 \u2013 9' },
+    { upTo: 10.001, m: ['True Adam', 'TA'],       f: ['True Stacy', 'TS'],       band: '9 \u2013 10' }
+  ];
+
+  function tierFor(score, gender) {
+    const female = gender === 'female';
+    const row = TIERS.find((t) => score < t.upTo) || TIERS[TIERS.length - 1];
+    const pair = female ? row.f : row.m;
+    return { label: pair[0], short: pair[1], band: row.band, index: TIERS.indexOf(row) };
+  }
+
+  /* ---------- mesh topology ----------
+     Used when MediaPipe's own tessellation is unavailable (offline preview, or
+     a build where the constant is not exposed). It draws the contours that
+     matter: face oval, eyes, brows, nose bridge and both lips. */
+  const MESH_LINES = [
+    [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152,
+     148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10],
+    [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7, 33],
+    [263, 466, 388, 387, 386, 385, 384, 398, 362, 382, 381, 380, 374, 373, 390, 249, 263],
+    [70, 63, 105, 66, 107, 55, 65, 52, 53, 46],
+    [300, 293, 334, 296, 336, 285, 295, 282, 283, 276],
+    [168, 6, 197, 195, 5, 4, 1, 2],
+    [98, 327, 294, 278, 344, 440, 275, 363],
+    [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318, 402, 317, 14, 87, 178, 88,
+     95, 185, 40, 39, 37, 0, 267, 269, 270, 409, 415, 310, 311, 312, 13, 82, 81, 80, 191, 78, 61],
+    [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 191],
+    [80, 81, 82, 13, 312, 311, 310, 415, 409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291]
+  ];
+
   /* ---------- the rubric ---------- */
   /* Bands are the first calibration pass. Every number here is meant to be
      tuned against real photos; nothing is hidden from the user. */
@@ -599,11 +639,70 @@
     return lm;
   }
 
+  /* ---------- preview mesh ----------
+     MediaPipe supplies the real tessellation on a device. In preview mode there
+     is no face in front of the camera, so this lays the same topology out on a
+     parametric face: oval, eyes, brows, nose and lips. */
+  function demoMesh(seed) {
+    const lm = new Array(478).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
+    const cx = 0.5, top = 0.20, chin = 0.80, rx = 0.205;
+    const cy = (top + chin) / 2, ry = (chin - top) / 2;
+
+    const oval = MESH_LINES[0];
+    const n = oval.length - 1;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i / n) * Math.PI * 2;
+      lm[oval[i]] = { x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, z: 0 };
+    }
+
+    const ring = (pts, ex, ey, rw, rh) => {
+      const m = pts.length - 1;
+      for (let i = 0; i < m; i++) {
+        const a = Math.PI + (i / m) * Math.PI * 2;
+        lm[pts[i]] = { x: ex + Math.cos(a) * rw, y: ey + Math.sin(a) * rh, z: 0 };
+      }
+    };
+    ring(MESH_LINES[1], cx - 0.072, cy - 0.062, 0.036, 0.014);
+    ring(MESH_LINES[2], cx + 0.072, cy - 0.062, 0.036, 0.014);
+
+    const brow = (pts, ex, ey, w) => {
+      pts.forEach((idx, i) => {
+        const t = i / (pts.length - 1);
+        lm[idx] = { x: ex - w / 2 + w * t, y: ey - Math.sin(Math.PI * t) * 0.014, z: 0 };
+      });
+    };
+    brow(MESH_LINES[3], cx - 0.072, cy - 0.098, 0.094);
+    brow(MESH_LINES[4], cx + 0.072, cy - 0.098, 0.094);
+
+    MESH_LINES[5].forEach((idx, i) => {
+      const t = i / (MESH_LINES[5].length - 1);
+      lm[idx] = { x: cx, y: cy - 0.038 + t * 0.098, z: 0 };
+    });
+    MESH_LINES[6].forEach((idx, i) => {
+      const t = i / (MESH_LINES[6].length - 1);
+      lm[idx] = { x: cx - 0.032 + 0.064 * t, y: cy + 0.072, z: 0 };
+    });
+
+    ring(MESH_LINES[7], cx, cy + 0.150, 0.058, 0.026);
+    ring(MESH_LINES[8], cx, cy + 0.147, 0.040, 0.011);
+
+    let s = seed || 7;
+    const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    for (let i = 0; i < 478; i++) {
+      if (lm[i].x === 0.5 && lm[i].y === 0.5) {
+        const a = rnd() * Math.PI * 2;
+        const r = Math.sqrt(rnd()) * 0.92;
+        lm[i] = { x: cx + Math.cos(a) * rx * r, y: cy + Math.sin(a) * ry * r, z: 0 };
+      }
+    }
+    return lm;
+  }
+
   /* ---------- public ---------- */
   global.LumorphEngine = {
-    METRICS, PILLARS, L, METRIC_POINTS,
+    METRICS, PILLARS, L, METRIC_POINTS, TIERS, MESH_LINES, tierFor,
     rawMetrics, skinMetrics, score, quality, demoLandmarks,
-    normalise, sideMetrics, encodeLandmarks, decodeLandmarks,
+    normalise, sideMetrics, encodeLandmarks, decodeLandmarks, demoMesh,
     band, makeGeo
   };
 })(window);

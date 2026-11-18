@@ -873,6 +873,65 @@ a { color: inherit; }
 }
 .shutter:disabled .shutter-dot { box-shadow: none; }
 
+/* ---------- landmark mesh ---------- */
+.cam-mesh {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+  transition: opacity var(--t-mid) var(--ease);
+}
+.cam-toggle {
+  position: absolute;
+  top: 14px; right: 14px;
+  height: 28px; padding: 0 13px;
+  border-radius: 99px;
+  background: rgba(10, 10, 14, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(246, 241, 231, 0.75);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.cam-toggle[aria-pressed="true"] {
+  color: var(--gold);
+  border-color: rgba(234, 213, 162, 0.45);
+  background: rgba(234, 213, 162, 0.12);
+}
+
+/* ---------- tier ---------- */
+.tier-line {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-top: 10px; flex-wrap: wrap;
+}
+.tier-name {
+  font-family: var(--serif);
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  color: var(--gold);
+}
+.tier-code {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 3px 9px;
+}
+.tier-chip {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border: 1px solid rgba(234, 213, 162, 0.28);
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+
 /* ---------- metric detail ---------- */
 .metric.tap { cursor: pointer; }
 .metric.tap:active { opacity: 0.75; }
@@ -2119,6 +2178,46 @@ setTimeout(function () {
     texture: [58, 288]
   };
 
+  /* ---------- tier ladder ----------
+     The overall score mapped onto the community's tier names. Male and other
+     genders use the normie/chad ladder, female uses the beauty/stacy ladder. */
+  const TIERS = [
+    { upTo: 2,      m: ['Sub 3', 'S3'],           f: ['Sub 3', 'S3'],            band: 'below 2' },
+    { upTo: 3,      m: ['Sub 5', 'S5'],           f: ['Sub 5', 'S5'],            band: '2 \u2013 3' },
+    { upTo: 4,      m: ['Low Tier Normie', 'LTN'], f: ['Low Tier Beauty', 'LTB'], band: '3 \u2013 4' },
+    { upTo: 5,      m: ['Mid Tier Normie', 'MTN'], f: ['Mid Tier Beauty', 'MTB'], band: '4 \u2013 5' },
+    { upTo: 7,      m: ['High Tier Normie', 'HTN'], f: ['High Tier Beauty', 'HTB'], band: '5 \u2013 7' },
+    { upTo: 8,      m: ['Chad Lite', 'CL'],       f: ['Stacy Lite', 'SL'],       band: '7 \u2013 8' },
+    { upTo: 9,      m: ['Chad', 'C'],             f: ['Stacy', 'S'],             band: '8 \u2013 9' },
+    { upTo: 10.001, m: ['True Adam', 'TA'],       f: ['True Stacy', 'TS'],       band: '9 \u2013 10' }
+  ];
+
+  function tierFor(score, gender) {
+    const female = gender === 'female';
+    const row = TIERS.find((t) => score < t.upTo) || TIERS[TIERS.length - 1];
+    const pair = female ? row.f : row.m;
+    return { label: pair[0], short: pair[1], band: row.band, index: TIERS.indexOf(row) };
+  }
+
+  /* ---------- mesh topology ----------
+     Used when MediaPipe's own tessellation is unavailable (offline preview, or
+     a build where the constant is not exposed). It draws the contours that
+     matter: face oval, eyes, brows, nose bridge and both lips. */
+  const MESH_LINES = [
+    [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152,
+     148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10],
+    [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7, 33],
+    [263, 466, 388, 387, 386, 385, 384, 398, 362, 382, 381, 380, 374, 373, 390, 249, 263],
+    [70, 63, 105, 66, 107, 55, 65, 52, 53, 46],
+    [300, 293, 334, 296, 336, 285, 295, 282, 283, 276],
+    [168, 6, 197, 195, 5, 4, 1, 2],
+    [98, 327, 294, 278, 344, 440, 275, 363],
+    [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318, 402, 317, 14, 87, 178, 88,
+     95, 185, 40, 39, 37, 0, 267, 269, 270, 409, 415, 310, 311, 312, 13, 82, 81, 80, 191, 78, 61],
+    [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 191],
+    [80, 81, 82, 13, 312, 311, 310, 415, 409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291]
+  ];
+
   /* ---------- the rubric ---------- */
   /* Bands are the first calibration pass. Every number here is meant to be
      tuned against real photos; nothing is hidden from the user. */
@@ -2348,11 +2447,70 @@ setTimeout(function () {
     return lm;
   }
 
+  /* ---------- preview mesh ----------
+     MediaPipe supplies the real tessellation on a device. In preview mode there
+     is no face in front of the camera, so this lays the same topology out on a
+     parametric face: oval, eyes, brows, nose and lips. */
+  function demoMesh(seed) {
+    const lm = new Array(478).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
+    const cx = 0.5, top = 0.20, chin = 0.80, rx = 0.205;
+    const cy = (top + chin) / 2, ry = (chin - top) / 2;
+
+    const oval = MESH_LINES[0];
+    const n = oval.length - 1;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i / n) * Math.PI * 2;
+      lm[oval[i]] = { x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, z: 0 };
+    }
+
+    const ring = (pts, ex, ey, rw, rh) => {
+      const m = pts.length - 1;
+      for (let i = 0; i < m; i++) {
+        const a = Math.PI + (i / m) * Math.PI * 2;
+        lm[pts[i]] = { x: ex + Math.cos(a) * rw, y: ey + Math.sin(a) * rh, z: 0 };
+      }
+    };
+    ring(MESH_LINES[1], cx - 0.072, cy - 0.062, 0.036, 0.014);
+    ring(MESH_LINES[2], cx + 0.072, cy - 0.062, 0.036, 0.014);
+
+    const brow = (pts, ex, ey, w) => {
+      pts.forEach((idx, i) => {
+        const t = i / (pts.length - 1);
+        lm[idx] = { x: ex - w / 2 + w * t, y: ey - Math.sin(Math.PI * t) * 0.014, z: 0 };
+      });
+    };
+    brow(MESH_LINES[3], cx - 0.072, cy - 0.098, 0.094);
+    brow(MESH_LINES[4], cx + 0.072, cy - 0.098, 0.094);
+
+    MESH_LINES[5].forEach((idx, i) => {
+      const t = i / (MESH_LINES[5].length - 1);
+      lm[idx] = { x: cx, y: cy - 0.038 + t * 0.098, z: 0 };
+    });
+    MESH_LINES[6].forEach((idx, i) => {
+      const t = i / (MESH_LINES[6].length - 1);
+      lm[idx] = { x: cx - 0.032 + 0.064 * t, y: cy + 0.072, z: 0 };
+    });
+
+    ring(MESH_LINES[7], cx, cy + 0.150, 0.058, 0.026);
+    ring(MESH_LINES[8], cx, cy + 0.147, 0.040, 0.011);
+
+    let s = seed || 7;
+    const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    for (let i = 0; i < 478; i++) {
+      if (lm[i].x === 0.5 && lm[i].y === 0.5) {
+        const a = rnd() * Math.PI * 2;
+        const r = Math.sqrt(rnd()) * 0.92;
+        lm[i] = { x: cx + Math.cos(a) * rx * r, y: cy + Math.sin(a) * ry * r, z: 0 };
+      }
+    }
+    return lm;
+  }
+
   /* ---------- public ---------- */
   global.LumorphEngine = {
-    METRICS, PILLARS, L, METRIC_POINTS,
+    METRICS, PILLARS, L, METRIC_POINTS, TIERS, MESH_LINES, tierFor,
     rawMetrics, skinMetrics, score, quality, demoLandmarks,
-    normalise, sideMetrics, encodeLandmarks, decodeLandmarks,
+    normalise, sideMetrics, encodeLandmarks, decodeLandmarks, demoMesh,
     band, makeGeo
   };
 })(window);
@@ -2448,6 +2606,7 @@ setTimeout(function () {
     image: SVG('<rect x="3.6" y="5.2" width="16.8" height="13.6" rx="2.4"/><circle cx="8.7" cy="10" r="1.3"/><path d="M4.6 17.2l4.5-4.3 3.2 2.8 3-2.5 4.1 3.6"/>'),
     flip: SVG('<path d="M12 3.6v16.8"/><path d="M9.2 6.6 4.6 12l4.6 5.4z"/><path d="M14.8 6.6 19.4 12l-4.6 5.4z"/>'),
     clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>'),
+    mesh: SVG('<path d="M12 3.2 4.4 7.6v8.8L12 20.8l7.6-4.4V7.6z"/><path d="M12 3.2v17.6"/><path d="M4.4 7.6 12 12l7.6-4.4"/><path d="M4.4 16.4 12 12l7.6 4.4"/>'),
     globe: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8"/><path d="M12 3.6c2.2 2.3 3.3 5.2 3.3 8.4s-1.1 6.1-3.3 8.4c-2.2-2.3-3.3-5.2-3.3-8.4S9.8 5.9 12 3.6z"/>'),
     share: SVG('<circle cx="17.4" cy="5.6" r="2.5"/><circle cx="6.6" cy="12" r="2.5"/><circle cx="17.4" cy="18.4" r="2.5"/><path d="M8.8 10.9 15.2 6.7"/><path d="M8.8 13.1l6.4 4.2"/>'),
     report: SVG('<path d="M6.6 3.8h6.6l4.4 4.4v12H6.6z"/><path d="M13.2 3.8v4.4h4.4"/><path d="M9.4 16.6v-3.4M12 16.6v-5.6M14.6 16.6v-2"/>'),
@@ -3180,7 +3339,9 @@ setTimeout(function () {
           h('div', { class: 'row gap-16' },
             ring(78, scan.overall, 0),
             h('div', { class: 'grow' },
-              h('p', { class: 'eyebrow' }, T('Focus')),
+              h('div', { class: 'row between' },
+                h('p', { class: 'eyebrow' }, T('Focus')),
+                h('span', { class: 'tier-chip' }, E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other').short)),
               h('div', { class: 'display sm', style: { marginTop: '4px' } }, focus ? focus.label : T('Balanced')),
               h('div', { class: 'row gap-12 mt-8' },
                 stat(T('Face'), scan.overall),
@@ -3475,6 +3636,10 @@ setTimeout(function () {
       const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
       const fileset = await vision.FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      try {
+        const tess = vision.FaceLandmarker.FACE_LANDMARKS_TESSELATION;
+        if (tess && tess.length) cam.meshLines = tess.map((c) => [c.start, c.end]);
+      } catch (e) { cam.meshLines = null; }
       return vision.FaceLandmarker.createFromOptions(fileset, {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
@@ -3512,7 +3677,9 @@ setTimeout(function () {
     const stepPill = h('div', { class: 'cam-step' }, h('span', { class: 'dot' }), '1 of 2 · ' + T('Front'));
     const hint = h('div', { class: 'cam-hint' }, 'Starting camera\u2026');
     const flash = h('div', { class: 'cam-flash' });
-    const panel = h('div', { class: 'cam-panel' }, video, guide, stepPill, hint, flash);
+    const meshCanvas = h('canvas', { class: 'cam-mesh' });
+    const meshBtn = h('button', { class: 'cam-toggle', 'aria-pressed': 'true' }, 'Mesh');
+    const panel = h('div', { class: 'cam-panel' }, video, meshCanvas, guide, stepPill, hint, flash, meshBtn);
     const chips = h('div', { class: 'cam-chips' });
     const fileInput = h('input', { type: 'file', accept: 'image/*', class: 'hide' });
 
@@ -3550,8 +3717,36 @@ setTimeout(function () {
       chips.append(el);
     });
 
+    let meshOn = true;
+    meshBtn.addEventListener('click', () => {
+      meshOn = !meshOn;
+      meshBtn.setAttribute('aria-pressed', String(meshOn));
+      meshCanvas.style.opacity = meshOn ? '1' : '0';
+      if (!meshOn) meshCanvas.getContext('2d').clearRect(0, 0, meshCanvas.width, meshCanvas.height);
+    });
+
+    function paintMesh() {
+      if (!meshOn || !cam.lm) return;
+      const rect = panel.getBoundingClientRect();
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = Math.round(rect.width * dpr), H = Math.round(rect.height * dpr);
+      if (meshCanvas.width !== W || meshCanvas.height !== H) {
+        meshCanvas.width = W; meshCanvas.height = H;
+      }
+      const ctx = meshCanvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      drawMesh(ctx, cam.lm, W, H, {
+        lines: cam.meshLines || E.MESH_LINES,
+        stroke: 'rgba(234,213,162,0.45)',
+        dot: 'rgba(255,246,223,0.75)',
+        dotSize: 1.1 * dpr,
+        lineWidth: 0.9 * dpr
+      });
+    }
+
     function updateLive() {
       const vw = video.videoWidth || 1080, vh = video.videoHeight || 1440;
+      paintMesh();
       const q = E.quality(cam.lm, vw, vh, video);
       Object.keys(chipEls).forEach((id) => {
         const c = (q.chips || []).find((x) => x.id === id);
@@ -3578,6 +3773,8 @@ setTimeout(function () {
       if (demo) {
         hint.textContent = 'Preview mode \u2014 using a sample face';
         shutter.disabled = false;
+        cam.lm = E.demoMesh(7);
+        paintMesh();
         return;
       }
       try {
@@ -3615,7 +3812,7 @@ setTimeout(function () {
 
     function capture() {
       if (flow.demo) {
-        const lm = E.demoLandmarks(Math.floor(Math.random() * 99999));
+        const lm = E.demoMesh(Math.floor(Math.random() * 9999) + 3);
         takeShot(null, lm, 1080, 1440);
         return;
       }
@@ -3827,6 +4024,8 @@ setTimeout(function () {
           h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('home') },
             h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } })),
           h('div', { class: 'row gap-8' },
+            h('button', { class: 'icon-btn', 'aria-label': 'Landmark mesh', onclick: () => openMesh(scan) },
+              h('span', { html: I.mesh, style: { display: 'grid', width: '19px', height: '19px' } })),
             h('button', { class: 'icon-btn', 'aria-label': 'Download report', onclick: () => downloadReport(scan) },
               h('span', { html: I.report, style: { display: 'grid', width: '19px', height: '19px' } })),
             h('button', { class: 'icon-btn', 'aria-label': 'Share', onclick: () => shareResult(scan) },
@@ -3866,6 +4065,12 @@ setTimeout(function () {
           h('div', { class: 'grow' },
             h('p', { class: 'eyebrow' }, T('Overall')),
             h('div', { class: 'display md', style: { marginTop: '2px' } }, scoreWord(scan.overall)),
+            (() => {
+              const tr = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
+              return h('div', { class: 'tier-line' },
+                h('span', { class: 'tier-name' }, tr.label),
+                h('span', { class: 'tier-code' }, tr.short + ' \u00b7 ' + tr.band));
+            })(),
             h('p', { class: 'small mt-8' }, 'Measured from 478 landmarks on this device. No cloud, no guessing.')))),
       h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
         h('div', { class: 'card-h' }, h('div', { class: 'eyebrow' }, T('Pillars'))),
@@ -3977,6 +4182,96 @@ setTimeout(function () {
         h('button', { class: 'btn ghost', onclick: () => go('how') }, T('How this is scored')),
         h('button', { class: 'btn primary', onclick: () => go('routine') }, T('Open routine')))
     );
+  }
+
+  /* ---------- landmark mesh ---------- */
+  function drawMesh(ctx, lm, W, H, opts) {
+    const o = opts || {};
+    if (!lm) return;
+    const lines = o.lines || E.MESH_LINES;
+    ctx.save();
+    ctx.strokeStyle = o.stroke || 'rgba(234,213,162,0.55)';
+    ctx.lineWidth = o.lineWidth || 1;
+    ctx.beginPath();
+    for (let k = 0; k < lines.length; k++) {
+      const line = lines[k];
+      for (let i = 0; i < line.length; i++) {
+        const p = lm[line[i]];
+        if (!p) continue;
+        const x = p.x * W, y = p.y * H;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+
+    if (o.dots !== false) {
+      ctx.fillStyle = o.dot || 'rgba(255,246,223,0.92)';
+      const r = o.dotSize || 1.4;
+      const seen = {};
+      for (let k = 0; k < lines.length; k++) {
+        for (let i = 0; i < lines[k].length; i++) {
+          const id = lines[k][i];
+          if (seen[id]) continue;
+          seen[id] = 1;
+          const p = lm[id];
+          if (!p) continue;
+          ctx.beginPath();
+          ctx.arc(p.x * W, p.y * H, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    if (o.indices) {
+      ctx.fillStyle = 'rgba(150,200,255,0.95)';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      const idx = E.MESH_LINES[0];
+      idx.forEach((i) => {
+        const p = lm[i];
+        if (!p) return;
+        ctx.fillText(String(i), p.x * W, p.y * H - 6);
+      });
+    }
+    ctx.restore();
+  }
+
+  function openMesh(scan) {
+    const lm = E.decodeLandmarks(scan.lm);
+    if (!lm) { toast('No landmark data on this scan'); return; }
+
+    const cv = h('canvas', { class: 'metric-canvas' });
+    let showIdx = false;
+
+    const paint = () => {
+      const W = 700, H = 900;
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#0B0B10';
+      ctx.fillRect(0, 0, W, H);
+      if (scan.thumb) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, W, H);
+          ctx.fillStyle = 'rgba(7,7,10,0.25)';
+          ctx.fillRect(0, 0, W, H);
+          drawMesh(ctx, lm, W, H, { indices: showIdx, lineWidth: 1.1, dotSize: 1.5 });
+        };
+        img.src = scan.thumb;
+      } else {
+        drawMesh(ctx, lm, W, H, { indices: showIdx, lineWidth: 1.4, dotSize: 1.8, stroke: 'rgba(234,213,162,0.7)' });
+      }
+    };
+    paint();
+
+    const toggle = h('button', { class: 'btn small ghost', onclick: () => { showIdx = !showIdx; paint(); } }, 'Numbers');
+
+    openSheet(h('div', {},
+      h('p', { class: 'eyebrow' }, 'Landmark mesh'),
+      h('h2', { class: 'display sm', style: { marginTop: '6px' } }, '478 points'),
+      h('p', { class: 'small mt-12' }, 'Every measurement comes from these points. They are found on your device and never stored with the photo.'),
+      h('div', { class: 'mt-16' }, cv),
+      h('div', { class: 'row gap-10 mt-16' }, toggle, h('button', { class: 'btn small ghost', onclick: closeSheet }, 'Close'))));
   }
 
   /* ---------- share card ---------- */
@@ -4097,7 +4392,12 @@ setTimeout(function () {
 
     ctx.fillStyle = '#F6F1E7';
     ctx.font = '400 62px ' + SERIF;
-    ctx.fillText(scoreWordFor(scan.overall), pad + scoreW + 26, 616);
+    ctx.fillText(scoreWordFor(scan.overall), pad + scoreW + 26, 600);
+
+    const tier = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
+    ctx.fillStyle = 'rgba(234,213,162,0.95)';
+    ctx.font = '400 34px ' + SERIF;
+    ctx.fillText(tier.label, pad + scoreW + 26, 650);
 
     // pillars
     const pillars = [
@@ -4380,6 +4680,14 @@ setTimeout(function () {
     ctx.fillStyle = '#1A1815';
     ctx.font = '400 44px ' + SERIF;
     ctx.fillText(scoreWordFor(scan.overall), pad + sw + 20, 520);
+
+    const tier = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
+    ctx.fillStyle = '#8C6A2A';
+    ctx.font = '400 34px ' + SERIF;
+    ctx.fillText(tier.label, pad + sw + 20, 566);
+    ctx.fillStyle = '#8E8880';
+    ctx.font = '500 16px ' + SANS;
+    ctx.fillText(tier.short + ' \u00b7 ' + tier.band, pad + sw + 20, 592);
 
     // pillars
     let y = 640;
