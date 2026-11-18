@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Lumorph — lookmaxxing, free for everyone</title>
+<meta name="description" content="Lumorph scores your face on device, builds a routine around your skin and tracks what actually changes. Free, no subscription, no AI bills." />
+<meta name="theme-color" content="#07070A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Lumorph" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./icons/icon-192.png" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <script>
+    // If anything fails to load, say so instead of showing a blank screen.
+    window.__bootFail = function (msg) {
+      var d = document.getElementById('boot-error');
+      if (!d) return;
+      d.style.display = 'block';
+      d.querySelector('.msg').textContent = msg;
+    };
+    window.addEventListener('error', function (e) {
+      if (e && e.message) window.__bootFail(e.message + (e.lineno ? ' \u2014 line ' + e.lineno : ''));
+    }, true);
+    setTimeout(function () {
+      var v = document.getElementById('view');
+      if (!v || !v.children.length) {
+        window.__bootFail('The app did not start. If you opened this file directly, use the single-file build (Lumorph.html) instead.');
+      }
+    }, 3000);
+  </script>
+  <div id="boot-error" style="display:none;position:fixed;inset:0;z-index:999;background:#07070A;color:#F6F1E7;font:14px/1.5 -apple-system,system-ui,sans-serif;padding:28px;">
+    <div style="max-width:420px;margin:12vh auto 0;">
+      <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9B968C;margin-bottom:10px;">Lumorph could not start</div>
+      <div class="msg" style="color:#EAD5A2;margin-bottom:18px;"></div>
+      <div style="color:#9B968C;font-size:13px;">Try the single-file build, or serve the folder over http (python3 -m http.server 8080).</div>
+    </div>
+  </div>
+  <div class="app" id="app">
+    <div class="aurora" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="topbar"></div>
+    <main id="view"></main>
+    <nav id="tabbar" class="tabbar hide"></nav>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="sheet" class="sheet-wrap" aria-hidden="true"></div>
+
+  <!-- shared gradients -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFF4D9" />
+        <stop offset="55%" stop-color="#EAD5A2" />
+        <stop offset="100%" stop-color="#C6A167" />
+      </linearGradient>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(234,213,162,0.30)" />
+        <stop offset="100%" stop-color="rgba(234,213,162,0)" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <script src="./engine.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "Lumorph — lookmaxxing, free for everyone",
+  "short_name": "Lumorph",
+  "description": "On-device face scoring, a routine built around your skin, and progress you can actually see. Free, offline, no accounts.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07070A",
+  "theme_color": "#07070A",
+  "categories": [
+    "health",
+    "lifestyle",
+    "fitness"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
