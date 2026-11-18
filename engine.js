@@ -105,12 +105,12 @@
     const symmetry = symSum / pairs.length / ipd;
 
     /* 2. facial thirds */
-    const upper = Math.abs(vertical(P.nasion) - vertical(P.forehead));
+    // the mesh top is not the hairline, so only the two measurable thirds are
+    // compared: nasion to subnasale against subnasale to chin
     const middle = Math.abs(vertical(P.subnasale) - vertical(P.nasion));
     const lower = Math.abs(vertical(P.chin) - vertical(P.subnasale));
-    const total = upper + middle + lower || 1;
-    const thirds = [upper / total, middle / total, lower / total];
-    const thirdsDev = Math.max(...thirds.map((t) => Math.abs(t - 1 / 3)));
+    const lowerPair = middle + lower || 1;
+    const thirdsDev = Math.abs(middle / lowerPair - 0.48);
 
     /* 3. facial fifths — the eye band divided into five equal columns */
     const fifth = faceW / 5;
@@ -124,7 +124,10 @@
 
     /* 4. proportions */
     const ipdRatio = ipd / faceW;
-    const midfaceRatio = ipd / (Math.abs(vertical(P.subnasale) - vertical(P.nasion)) || 1);
+    // midface = eye line to upper lip, the standard definition. The nasion gave
+    // the lower midface only, which roughly doubled the ratio.
+    const eyeLineY = (P.eyeOutR.y + P.eyeInR.y + P.eyeInL.y + P.eyeOutL.y) / 4;
+    const midfaceRatio = ipd / (Math.abs(vertical(P.subnasale) - vertical({ y: eyeLineY })) || 1);
 
     /* 5. eyes */
     const tiltR = deg(Math.atan2(-(P.eyeOutR.y - P.eyeInR.y), Math.abs(P.eyeOutR.x - P.eyeInR.x)));
@@ -156,7 +159,7 @@
     const gonialR = angleAt(P.faceR, P.gonionR, P.chin);
     const gonialL = angleAt(P.faceL, P.gonionL, P.chin);
     const gonialAngle = (gonialR + gonialL) / 2;
-    const chinWidth = dist(P.jawR, P.jawL) / faceW;
+    const jawWidth = dist(P.jawR, P.jawL) / faceW;
 
     /* 8. dimorphism cues */
     const eyeY = (P.lidUpR.y + P.lidUpL.y) / 2;
@@ -166,7 +169,7 @@
     return {
       symmetry, thirdsDev, fifthsDev, ipdRatio, midfaceRatio, canthalTilt,
       eyeAspect, noseToEyeGap, philtrumChin, lipToNose, vermilionRatio,
-      lipFullness, jawCheek, gonialAngle, chinWidth, browHeight, midfaceWidth,
+      lipFullness, jawCheek, gonialAngle, jawWidth, browHeight, midfaceWidth,
       thirds, _geo: { faceW, faceH, ipd, eyeMid: g.eyeMid }
     };
   }
@@ -224,11 +227,12 @@
     const evenness = std(all.map(lum));
     const cheekLum = mean([...cheekR, ...cheekL].map(lum));
     const underLum = mean([...underR, ...underL].map(lum));
-    const underEye = clamp(cheekLum - underLum, -0.2, 0.4);
+    const underEye = Math.max(0, clamp(cheekLum - underLum, -0.2, 0.4));
 
     const tzLum = tzone.map(lum).sort((a, b) => a - b);
     const p95 = tzLum.length ? tzLum[Math.floor(tzLum.length * 0.95)] : 0.7;
-    const shine = p95;
+    const median = tzLum.length ? tzLum[Math.floor(tzLum.length * 0.5)] : 0.6;
+    const shine = Math.max(0, p95 - median);
 
     // high-frequency energy across the cheeks: a proxy for visible texture
     let energy = 0, n = 0;
@@ -283,13 +287,20 @@
     if (mean < 0.02) return img;
 
     // gain toward the target, damped so a badly lit photo is corrected, not invented
-    const gain = Math.min(1.85, Math.max(0.62, want / mean));
-    const gamma = mean < want ? 0.92 : 1.06;
+    const gain = Math.min(1.35, Math.max(0.75, want / mean));
+    const gamma = mean < want ? 0.94 : 1.04;
+
+    // pull contrast 15% toward the mean so a harsh light does not read as
+    // blotchy skin; the measurement is about the skin, not the lamp
+    let mean2 = 0;
+    for (let i = 0; i < px.length; i += 4) mean2 += px[i];
+    mean2 = mean2 / (px.length / 4) / 255;
 
     for (let i = 0; i < px.length; i += 4) {
       for (let c = 0; c < 3; c++) {
         let v = px[i + c] / 255;
         v = Math.pow(v, gamma) * gain;
+        v = mean2 + (v - mean2) * 0.85;
         px[i + c] = Math.max(0, Math.min(255, v * 255));
       }
     }
@@ -347,13 +358,13 @@
   /* which points a measurement is drawn from */
   const METRIC_POINTS = {
     symmetry: [33, 263],
-    thirdsDev: [10, 168, 4, 152],
+    thirdsDev: [168, 4, 152],
     fifthsDev: [234, 33, 133, 362, 263, 454],
     ipdRatio: [33, 263, 234, 454],
-    midfaceRatio: [133, 362, 168, 4],
+    midfaceRatio: [133, 362, 33, 263, 4],
     jawCheek: [172, 397, 234, 454],
     gonialAngle: [234, 172, 152],
-    chinWidth: [132, 361],
+    jawWidth: [132, 361],
     browHeight: [105, 334, 159, 386],
     lipFullness: [0, 13, 14, 17],
     midfaceWidth: [58, 288, 234, 454],
@@ -418,7 +429,7 @@
     return {
       jawCheek: male ? [0.82, 0.93] : [0.72, 0.85],
       gonial: male ? [116, 136] : [120, 140],
-      browHeight: male ? [0.30, 0.44] : [0.34, 0.50],
+      browHeight: male ? [0.13, 0.22] : [0.15, 0.26],
       lipFullness: male ? [0.22, 0.34] : [0.28, 0.44],
       midfaceWidth: male ? [0.62, 0.80] : [0.60, 0.78]
     };
@@ -427,7 +438,7 @@
   /* A metric scores 10 only at the ideal centre and falls away smoothly on both
      sides, so "inside the band" is not the same as "good". Deviation metrics
      (symmetry, thirds, fifths) peak at zero. */
-  const K = 0.7;
+  const K = 0.34;
   function peak(v, lo, hi, k) {
     const mid = (lo + hi) / 2;
     const half = Math.max((hi - lo) / 2, 1e-6);
@@ -441,22 +452,22 @@
 
   const METRICS = [
     { id: 'symmetry', label: 'Symmetry', pillar: 'harmony', fmt: (v) => (v * 100).toFixed(1) + '%',
-      score: (v) => flat(v, 0.085), tip: 'Asymmetry is mostly light and camera angle. Shoot straight-on, at eye level, in even light.' },
+      score: (v) => flat(v, 0.105), tip: 'Asymmetry is mostly light and camera angle. Shoot straight-on, at eye level, in even light.' },
     { id: 'thirdsDev', label: 'Facial thirds', pillar: 'harmony', fmt: (v) => (v * 100).toFixed(1) + '% dev',
       score: (v) => flat(v, 0.055), tip: 'Thirds shift with head tilt. A level chin is worth more than any product.' },
     { id: 'fifthsDev', label: 'Facial fifths', pillar: 'harmony', fmt: (v) => (v * 100).toFixed(1) + '% dev',
-      score: (v) => flat(v, 0.08), tip: 'Width balance is fixed structure. What you control is hair volume at the sides.' },
-    { id: 'ipdRatio', label: 'Eye spacing', pillar: 'harmony', fmt: (v) => v.toFixed(3),
-      score: (v) => peak(v, 0.43, 0.49), tip: 'Fixed. Frames and brow shape change how this reads more than anything else.' },
+      score: (v) => flat(v, 0.115), tip: 'Width balance is fixed structure. What you control is hair volume at the sides.' },
+    { id: 'ipdRatio', label: 'Eye span', pillar: 'harmony', fmt: (v) => v.toFixed(3),
+      score: (v) => peak(v, 0.58, 0.70), tip: 'Fixed. Frames and brow shape change how this reads more than anything else.' },
     { id: 'midfaceRatio', label: 'Midface ratio', pillar: 'harmony', fmt: (v) => v.toFixed(2),
-      score: (v) => peak(v, 0.94, 1.16), tip: 'Hairline and brow shape change the perceived midface more than the midface changes.' },
+      score: (v) => peak(v, 1.22, 1.62), tip: 'Hairline and brow shape change the perceived midface more than the midface changes.' },
 
     { id: 'jawCheek', label: 'Jaw to cheek width', pillar: 'angularity', fmt: (v) => v.toFixed(2),
       score: (v, b) => peak(v, b.jawCheek[0], b.jawCheek[1]), tip: 'Body fat and neck posture move this more than any mewing myth. Train, sleep, stand tall.' },
     { id: 'gonialAngle', label: 'Gonial angle', pillar: 'angularity', fmt: (v) => v.toFixed(0) + '\u00b0',
       score: (v, b) => peak(v, b.gonial[0], b.gonial[1]), tip: 'Partly fixed. Chewing hard food and keeping your tongue on the palate is the honest advice.' },
-    { id: 'chinWidth', label: 'Chin width', pillar: 'angularity', fmt: (v) => v.toFixed(2),
-      score: (v) => peak(v, 0.16, 0.27), tip: 'Facial hair is the fastest lever here: a defined chin line reads wider immediately.' },
+    { id: 'jawWidth', label: 'Jaw width', pillar: 'angularity', fmt: (v) => v.toFixed(2),
+      score: (v) => peak(v, 0.84, 0.96), tip: 'Facial hair is the fastest lever here: a defined jaw line reads wider immediately.' },
 
     { id: 'browHeight', label: 'Brow prominence', pillar: 'dimorphism', fmt: (v) => v.toFixed(2),
       score: (v, b) => peak(v, b.browHeight[0], b.browHeight[1]), tip: 'Brow grooming changes this in minutes. Keep the natural line, clean the strays.' },
@@ -484,8 +495,8 @@
       score: (v) => peak(v, 0.01, 0.10), tip: 'Gentle cleanser, no scrubbing, and a barrier moisturiser at night.' },
     { id: 'underEye', label: 'Under-eye shadow', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '%',
       score: (v) => flat(v, 0.12), tip: 'Sleep is the product. Eight hours beats every under-eye cream on the shelf.' },
-    { id: 'shine', label: 'T-zone shine', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '%',
-      score: (v) => peak(v, 0.50, 0.86), tip: 'A light gel moisturiser and blotting beats washing your face five times a day.' },
+    { id: 'shine', label: 'T-zone shine', pillar: 'skin', fmt: (v) => (v * 100).toFixed(0) + '% lift',
+      score: (v) => peak(v, 0.06, 0.24), tip: 'A light gel moisturiser and blotting beats washing your face five times a day.' },
     { id: 'texture', label: 'Texture', pillar: 'skin', fmt: (v) => v.toFixed(3),
       score: (v) => flat(v, 0.075), tip: 'Consistency over intensity: a simple routine done for 60 days beats a complicated one done twice.' }
   ];
@@ -523,7 +534,7 @@
       if (!arr.length) { pillars[p.id] = null; return; }
       const amean = arr.reduce((a, b) => a + b, 0) / arr.length;
       const gmean = Math.exp(arr.reduce((a, b) => a + Math.log(Math.max(b, 0.4)), 0) / arr.length);
-      pillars[p.id] = 0.72 * amean + 0.28 * gmean;
+      pillars[p.id] = 0.82 * amean + 0.18 * gmean;
     });
 
     let total = 0, wsum = 0;

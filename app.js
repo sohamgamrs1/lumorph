@@ -549,7 +549,9 @@
       S.consent = { type: 'local-analysis', at: Date.now() };
       save();
       onb = null;
-      go('scan');
+      // land on home: the scan is the user's choice, not a forced next step
+      go('home');
+      setTimeout(() => toast('Welcome, ' + S.profile.name + '. Take a scan when you are ready.'), 500);
     }
 
     /* steps --------------------------------------------------------------- */
@@ -1479,6 +1481,11 @@
 
       const res = E.score(metrics, (S.profile && S.profile.gender) || 'other');
 
+      // if the photo itself was poor, the number is not a verdict on the face
+      const passed = (quality.chips || []).filter((c) => c.ok).length;
+      const lowConfidence = (quality.chips || []).length >= 3 && passed < 2;
+      if (lowConfidence) res.overall = Math.max(4.5, res.overall);
+
       // side profile, beta, never part of the overall score
       let side = null;
       if (p.side && p.side.lm) {
@@ -1504,6 +1511,7 @@
         focus: res.focus,
         metrics,
         side,
+        lowConfidence,
         lm: E.encodeLandmarks(f.lm),
         demo: !f.source && /demo=1/.test(location.search),
         quality: { ok: quality.ok, chips: (quality.chips || []).map((c) => ({ id: c.id, label: c.label, ok: c.ok })) },
@@ -1609,7 +1617,9 @@
             })(),
             h('p', { class: 'small mt-8' }, aiSettings().consent
               ? '478 landmarks measured on this device, blended with a model read of the photo.'
-              : 'Measured from 478 landmarks on this device. No cloud, no guessing.')))),
+              : 'Measured from 478 landmarks on this device. No cloud, no guessing.'),
+            scan.lowConfidence ? h('p', { class: 'tiny mt-8', style: { color: 'var(--gold)' } },
+              'Provisional \u2014 the photo was off-angle or dim. Retake it straight-on in even light.') : null))),
       h('div', { class: 'rise', style: { '--i': 1 } }, aiCard(scan)),
 
       h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
@@ -1770,7 +1780,7 @@
         improvements: j.improvements || []
       };
       if (scan.geoOverall == null) scan.geoOverall = scan.overall;
-      scan.overall = Math.round((scan.geoOverall * 0.5 + j.attractiveness * 0.5) * 10) / 10;
+      scan.overall = Math.round((scan.geoOverall * 0.35 + j.attractiveness * 0.65) * 10) / 10;
       save();
       refreshAiCard(scan);
       refreshResults(scan);
@@ -1863,7 +1873,7 @@
       ai.improvements && ai.improvements.length ? h('div', { class: 'mt-12' },
         h('p', { class: 'eyebrow' }, 'Worth working on'),
         ai.improvements.map((s) => h('p', { class: 'small mt-4' }, '\u00b7 ' + s))) : null,
-      h('p', { class: 'tiny mt-12' }, 'Model estimate from this one photo, blended 50/50 with the geometric score. Not medical advice.'));
+      h('p', { class: 'tiny mt-12' }, 'Model estimate from this one photo, weighted 65% against 35% for the geometric score. Not medical advice.'));
   }
 
   function aiCard(scan) {
