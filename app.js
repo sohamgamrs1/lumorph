@@ -95,6 +95,27 @@
     { name: 'Newbie', at: 0 }, { name: 'Grinder', at: 500 }, { name: 'Sharp', at: 1500 },
     { name: 'Polished', at: 3500 }, { name: 'Luminous', at: 7000 }, { name: 'Apex', at: 12000 }
   ];
+  /* Redeem codes.
+     Only a salted 64-bit digest of each code is in this file, so reading the
+     source does not reveal a code. It cannot stop a determined brute force of
+     a 4-8 character space - see SECURITY.md for what this does and does not do. */
+  const CODE_SALT = 'lm$7k2p';
+  const CODES = {
+    bdf9dd71b2e1a7ae: { xp: 100, badge: 'founder', label: 'Founder' },
+    '0c29712191afafb7': { xp: 300, badge: 'supporter', label: 'Supporter', perk: 'history' },
+    e5d1f87df1bbabe3: { xp: 200, badge: 'insider', label: 'Insider' }
+  };
+  function digest(str) {
+    let h1 = 0x811c9dc5, h2 = 0x01000193;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      h1 ^= c; h1 = Math.imul(h1, 16777619) >>> 0;
+      h2 = Math.imul(h2 ^ c, 2246822519) >>> 0;
+      h2 = ((h2 << 13) | (h2 >>> 19)) >>> 0;
+    }
+    return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
+  }
+
   const QUESTS = [
     { id: 'am', label: 'Morning skincare', xp: 20, icon: 'drop' },
     { id: 'pm', label: 'Night skincare', xp: 20, icon: 'moon' },
@@ -104,6 +125,11 @@
     { id: 'groom', label: 'Grooming', xp: 10, icon: 'comb' }
   ];
   const WEEKLY = { id: 'rescan', label: 'Weekly re-scan', xp: 100, icon: 'refresh' };
+  const BADGES = [
+    { id: 'founder', label: 'Founder' },
+    { id: 'supporter', label: 'Supporter' },
+    { id: 'insider', label: 'Insider' }
+  ];
 
   function blank() {
     return {
@@ -1293,7 +1319,8 @@
         thumb
       };
       S.scans.push(scan);
-      if (S.scans.length > 60) S.scans.shift();
+      const cap = (S.badges && S.badges.supporter) ? 200 : 60;
+      if (S.scans.length > cap) S.scans.shift();
       S._open = scan.id;
       save();
       pendingScan = null;
@@ -1528,9 +1555,11 @@
         h('div', { style: { width: '92px', height: '92px', margin: '0 auto', borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #FFF4D8, var(--gold) 45%, var(--gold-2) 85%)', display: 'grid', placeItems: 'center', fontFamily: 'var(--serif)', fontSize: '34px', color: '#171308' } },
           (S.profile.name || 'L')[0].toUpperCase()),
         h('h1', { class: 'display md', style: { marginTop: '14px' } }, S.profile.name),
-        h('div', { class: 'row gap-8', style: { justifyContent: 'center', marginTop: '10px' } },
+        h('div', { class: 'row gap-8', style: { justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' } },
           h('span', { class: 'pill gold' }, 'Free forever'),
-          h('span', { class: 'pill plain' }, 'Rank: ' + rk.name))),
+          h('span', { class: 'pill plain' }, 'Rank: ' + rk.name),
+          BADGES.filter((b) => S.badges && S.badges[b.id]).map((b) =>
+            h('span', { class: 'pill badge-pill' }, h('span', { class: 'dot' }), b.label)))),
 
       h('p', { class: 'eyebrow mt-28 rise', style: { '--i': 1 } }, 'About you'),
       h('div', { class: 'card mt-12 rise', style: { '--i': 2 } },
@@ -1893,25 +1922,58 @@
   }
 
   function redeemPromo() {
-    const input = h('input', { class: 'input', placeholder: 'Enter code', maxlength: '16', autocapitalize: 'characters' });
+    const input = h('input', {
+      class: 'input', placeholder: 'Enter code', maxlength: '8',
+      autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false',
+      oninput: (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+    });
+    const msg = h('p', { class: 'field-error', style: { marginTop: '12px' } }, '');
+    const show = (t) => { msg.textContent = t; msg.classList.add('on'); };
+
+    const apply = () => {
+      const raw = (input.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!raw) return show('Enter a code.');
+      if (raw.length < 4 || raw.length > 8) return show('Codes are 4 to 8 characters.');
+
+      const tries = S.promoTries || { n: 0, until: 0 };
+      if (tries.until && tries.until > Date.now()) {
+        return show('Too many attempts. Try again in ' + Math.ceil((tries.until - Date.now()) / 1000) + ' seconds.');
+      }
+
+      const key = digest(CODE_SALT + raw);
+      const reward = CODES[key];
+      if (!reward) {
+        const n = (tries.n || 0) + 1;
+        S.promoTries = n >= 5 ? { n: 0, until: Date.now() + 60000 } : { n, until: 0 };
+        save();
+        return show('That code is not valid.');
+      }
+
+      S.promos = S.promos || {};
+      if (S.promos[key]) return show('That code has already been used on this device.');
+
+      S.promos[key] = Date.now();
+      S.xp += reward.xp;
+      S.badges = S.badges || {};
+      if (reward.badge) S.badges[reward.badge] = true;
+      S.promoTries = { n: 0, until: 0 };
+      save();
+      closeSheet();
+      haptic(20);
+      toast('+' + reward.xp + ' XP' + (reward.label ? ' \u00b7 ' + reward.label + ' unlocked' : ''));
+      go('settings');
+    };
+
     openSheet(h('div', {},
       h('h2', { class: 'display sm' }, 'Redeem a promo code'),
-      h('p', { class: 'small mt-12' }, 'Lumorph has nothing to sell, so a code cannot unlock features. A creator code adds 100 XP to your account once.'),
+      h('p', { class: 'small mt-12' }, 'Lumorph has nothing to sell, so a code never unlocks a paid feature. Codes are 4 to 8 characters, come from a creator or a friend, and work once per device.'),
       h('div', { class: 'mt-16' }, input),
+      msg,
       h('div', { class: 'row gap-10 mt-20' },
         h('button', { class: 'btn ghost', onclick: closeSheet }, 'Cancel'),
-        h('button', { class: 'btn primary', onclick: () => {
-          const code = (input.value || '').trim().toUpperCase();
-          if (!code || code.length < 4) { toast('Enter a code of at least 4 characters'); return; }
-          S.promos = S.promos || {};
-          if (S.promos[code]) { toast('That code is already used'); return; }
-          S.promos[code] = Date.now();
-          S.xp += 100;
-          save();
-          closeSheet();
-          toast('+100 XP added');
-          go('settings');
-        } }, 'Apply'))));
+        h('button', { class: 'btn primary', onclick: apply }, 'Apply'))));
+
+    setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (e) {} }, 320);
   }
 
   function confirmWipe() {

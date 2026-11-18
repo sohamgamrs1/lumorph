@@ -340,6 +340,7 @@ a { color: inherit; }
 }
 .pill.gold { border-color: rgba(234,213,162,0.3); background: var(--gold-soft); color: var(--gold); }
 .pill.plain { background: none; }
+.pill.badge-pill { background: var(--gold-soft); border-color: rgba(234,213,162,0.28); color: var(--gold); }
 .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
 .pill.tap { transition: transform 140ms var(--spring), background var(--t-fast) var(--ease); }
 .pill.tap:active { transform: scale(0.94); }
