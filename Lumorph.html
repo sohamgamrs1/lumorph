@@ -79,7 +79,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  min-height: 100%;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
@@ -89,7 +89,14 @@ html, body {
   overscroll-behavior-y: none;
 }
 
-body { display: flex; justify-content: center; }
+/* the page must grow and scroll with its content */
+html { overflow-x: hidden; }
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
 
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; cursor: pointer; padding: 0; }
@@ -102,7 +109,6 @@ a { color: inherit; }
   width: 100%;
   max-width: 460px;
   min-height: 100dvh;
-  overflow: hidden;
   background: var(--bg);
   isolation: isolate;
 }
