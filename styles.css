@@ -892,6 +892,51 @@ a { color: inherit; }
   background: rgba(234, 213, 162, 0.12);
 }
 
+/* ---------- ai card ---------- */
+.ai-card {
+  margin-top: 16px;
+  padding: 20px 20px 22px;
+  border-radius: 22px;
+  border: 1px solid rgba(234, 213, 162, 0.22);
+  background:
+    radial-gradient(120% 100% at 100% 0%, rgba(120, 96, 200, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
+}
+.ai-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 3px 9px;
+}
+.ai-badge.live {
+  color: #CBB8FF;
+  border-color: rgba(180, 160, 255, 0.35);
+  background: rgba(140, 120, 220, 0.14);
+}
+.ai-rows { display: grid; gap: 10px; }
+.ai-row { display: flex; align-items: baseline; justify-content: space-between; }
+.ai-row .k { font-size: 13px; color: var(--muted); }
+.ai-row .v { font-family: var(--serif); font-size: 22px; color: var(--ink); }
+.ai-skel { display: grid; gap: 10px; }
+.ai-skel i {
+  display: block;
+  height: 12px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.ai-skel i:nth-child(2) { width: 72%; }
+.ai-skel i:nth-child(3) { width: 48%; }
+@keyframes shimmer {
+  from { background-position: 140% 0; }
+  to { background-position: -40% 0; }
+}
+
 /* ---------- tier ---------- */
 .tier-line {
   display: flex; align-items: baseline; gap: 10px;

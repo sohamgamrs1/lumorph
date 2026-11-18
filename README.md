@@ -52,6 +52,22 @@ node build.js
 
 Preview with a populated demo profile: `http://localhost:8080/?demo=1` — add `&theme=light` for the light theme.
 
+## The optional AI read
+
+Off by default. When a user turns it on, each scan sends one photo to Google Gemini for a
+model estimate of attractiveness, harmony and skin, which is blended 50/50 with the
+geometric score.
+
+The key is never in the client. It lives in the deployment environment:
+
+1. Get a free key at `aistudio.google.com/apikey`.
+2. Vercel, Project, Settings, Environment Variables: add `GEMINI_KEY` for Production and Preview.
+3. Optionally set `GEMINI_MODEL` (defaults to `gemini-2.5-flash`, falling back to `gemini-2.0-flash`).
+4. Redeploy.
+
+`api/rate.js` is the serverless function that holds it. It rate-limits per IP, caps the
+payload at 3MB, and never returns the key.
+
 ## Deploy
 
 **Vercel** — import the repo, framework preset **Other**, no build command, output directory `.` (the repo root). It is a static site; nothing to compile.

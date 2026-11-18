@@ -1192,7 +1192,9 @@
       skipSide,
       fileInput,
       h('p', { class: 'tiny center mt-16 rise', style: { '--i': 4 } },
-        'Measured in this tab. Nothing is uploaded. Photos stay in your browser.')
+        aiSettings().consent
+          ? 'Measured in this tab. AI read is on, so each scan sends one photo to Google.'
+          : 'Measured in this tab. Nothing is uploaded. Photos stay in your browser.')
     );
 
     const chipEls = {};
@@ -1297,9 +1299,43 @@
       }
     }
 
+    function demoPhoto() {
+      const W = 600, H = 800;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, '#1A161C');
+      bg.addColorStop(0.55, '#2A2028');
+      bg.addColorStop(1, '#120F14');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      const glow = ctx.createRadialGradient(W * 0.5, H * 0.34, 10, W * 0.5, H * 0.34, W * 0.62);
+      glow.addColorStop(0, 'rgba(234,213,162,0.16)');
+      glow.addColorStop(1, 'rgba(234,213,162,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = 'rgba(246,241,231,0.10)';
+      ctx.beginPath();
+      ctx.ellipse(W * 0.5, H * 0.86, W * 0.42, H * 0.30, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(246,241,231,0.13)';
+      ctx.beginPath();
+      ctx.ellipse(W * 0.5, H * 0.40, W * 0.20, H * 0.235, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(246,241,231,0.35)';
+      ctx.font = '500 15px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PREVIEW', W / 2, H - 28);
+      return cv;
+    }
+
     function capture() {
       if (flow.demo) {
-        takeShot(null, E.demoLandmarks(Math.floor(Math.random() * 9999) + 3), 1080, 1440);
+        takeShot(demoPhoto(), E.demoLandmarks(Math.floor(Math.random() * 9999) + 3), 600, 800);
         return;
       }
       if (!cam.lm || !cam.stream) { toast('No face detected yet'); return; }
@@ -1480,6 +1516,7 @@
       save();
       pendingScan = null;
       go('results', { id: scan.id });
+      if (aiSettings().consent && f.source) runAiRead(scan, f.source);
     }
   };
 
@@ -1533,7 +1570,7 @@
         h('h1', { class: 'display md', style: { marginTop: '4px', marginBottom: '14px' } }, 'Face ', h('em', {}, 'analysis'))),
       seg
     );
-    const body = h('div', { class: 'mt-20' });
+    const body = h('div', { class: 'mt-20 res-body' });
     root.append(body);
 
     function paintBody() {
@@ -1570,8 +1607,12 @@
                 h('span', { class: 'tier-name' }, tr.label),
                 h('span', { class: 'tier-code' }, tr.short + ' \u00b7 ' + tr.band));
             })(),
-            h('p', { class: 'small mt-8' }, 'Measured from 478 landmarks on this device. No cloud, no guessing.')))),
-      h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
+            h('p', { class: 'small mt-8' }, aiSettings().consent
+              ? '478 landmarks measured on this device, blended with a model read of the photo.'
+              : 'Measured from 478 landmarks on this device. No cloud, no guessing.')))),
+      h('div', { class: 'rise', style: { '--i': 1 } }, aiCard(scan)),
+
+      h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
         h('div', { class: 'card-h' }, h('div', { class: 'eyebrow' }, T('Pillars'))),
         E.PILLARS.map((p) => {
           const v = scan.pillars[p.id];
@@ -1681,6 +1722,152 @@
         h('button', { class: 'btn ghost', onclick: () => go('how') }, T('How this is scored')),
         h('button', { class: 'btn primary', onclick: () => go('routine') }, T('Open routine')))
     );
+  }
+
+  /* ---------- AI read ---------- */
+  function aiSettings() {
+    S.settings = S.settings || {};
+    if (!S.settings.ai) S.settings.ai = { consent: false };
+    return S.settings.ai;
+  }
+
+  function toJpegDataUrl(src, width, quality) {
+    const w = src.naturalWidth || src.videoWidth || src.width;
+    const h = src.naturalHeight || src.videoHeight || src.height;
+    if (!w || !h) return null;
+    const scale = Math.min(1, width / w);
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(w * scale);
+    cv.height = Math.round(h * scale);
+    cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+    return cv.toDataURL('image/jpeg', quality || 0.78);
+  }
+
+  async function runAiRead(scan, source) {
+    scan.ai = { status: 'pending' };
+    save();
+    refreshAiCard(scan);
+    try {
+      const image = source ? toJpegDataUrl(source, 768, 0.8) : (scan.thumb || null);
+      if (!image) throw new Error('No photo on this scan');
+      const res = await fetch('/api/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image })
+      });
+      let j = {};
+      try { j = await res.json(); } catch (e) { j = {}; }
+      if (!res.ok) throw new Error(j.message || j.error || 'The read failed');
+      if (!j.face_found) { scan.ai = { status: 'noface' }; save(); refreshAiCard(scan); return; }
+
+      scan.ai = {
+        status: 'done',
+        score: j.attractiveness,
+        harmony: j.harmony,
+        skin: j.skin,
+        tier: j.tier,
+        strengths: j.strengths || [],
+        improvements: j.improvements || []
+      };
+      if (scan.geoOverall == null) scan.geoOverall = scan.overall;
+      scan.overall = Math.round((scan.geoOverall * 0.5 + j.attractiveness * 0.5) * 10) / 10;
+      save();
+      refreshAiCard(scan);
+      refreshResults(scan);
+    } catch (err) {
+      scan.ai = { status: 'error', message: String((err && err.message) || 'The read failed') };
+      save();
+      refreshAiCard(scan);
+    }
+  }
+
+  function refreshResults(scan) {
+    if (route !== 'results') return;
+    const body = view.querySelector('.res-body');
+    if (!body) return;
+    const y = window.scrollY;
+    body.innerHTML = '';
+    if (resTab === 'face') body.append(faceTab(scan));
+    if (resTab === 'ratings') body.append(ratingsTab(scan));
+    if (resTab === 'insights') body.append(insightsTab(scan));
+    fillBars(body);
+    window.scrollTo(0, y);
+  }
+
+  function refreshAiCard(scan) {
+    const host = document.getElementById('ai-card');
+    if (!host) return;
+    const y = window.scrollY;
+    host.innerHTML = '';
+    host.append(aiCardInner(scan));
+    fillBars(host);
+    window.scrollTo(0, y);
+  }
+
+  function aiCardInner(scan) {
+    const ai = scan.ai || null;
+    const on = aiSettings().consent;
+
+    if (!ai) {
+      return h('div', { class: 'ai-card' },
+        h('div', { class: 'row between' },
+          h('div', {},
+            h('p', { class: 'eyebrow' }, 'Second opinion'),
+            h('div', { class: 'display sm', style: { marginTop: '4px' } }, 'AI read')),
+          h('span', { class: 'ai-badge' + (on ? ' live' : '') }, on ? 'ready' : 'off')),
+        h('p', { class: 'small mt-8' }, 'Geometry measures proportion. It cannot tell a handsome face with bad skin from an unremarkable one with good bones. A vision model can.'),
+        on
+          ? h('p', { class: 'tiny mt-8' }, 'This sends this one photo to Google Gemini. Nothing else.')
+          : h('p', { class: 'tiny mt-8' }, 'Turning this on sends this one photo to Google Gemini. Nothing else, and only when you ask.'),
+        h('button', { class: 'btn small primary mt-12', onclick: () => {
+          if (!on) { aiSettings().consent = true; save(); }
+          runAiRead(scan, null);
+        } }, 'Read this photo'));
+    }
+
+    if (ai.status === 'pending') {
+      return h('div', { class: 'ai-card' },
+        h('div', { class: 'row between' },
+          h('div', {}, h('p', { class: 'eyebrow' }, 'Second opinion'), h('div', { class: 'display sm', style: { marginTop: '4px' } }, 'Reading\u2026')),
+          h('span', { class: 'ai-badge live' }, 'AI')),
+        h('div', { class: 'ai-skel mt-12' }, h('i', {}), h('i', {}), h('i', {})));
+    }
+
+    if (ai.status === 'noface') {
+      return h('div', { class: 'ai-card' },
+        h('p', { class: 'eyebrow' }, 'Second opinion'),
+        h('p', { class: 'small mt-8' }, 'The model could not find a clear face in this photo. Try a straight-on shot in better light.'));
+    }
+
+    if (ai.status === 'error') {
+      return h('div', { class: 'ai-card' },
+        h('p', { class: 'eyebrow' }, 'Second opinion'),
+        h('p', { class: 'small mt-8' }, ai.message || 'The read failed.'),
+        h('button', { class: 'btn small ghost mt-12', onclick: () => runAiRead(scan, null) }, 'Try again'));
+    }
+
+    const rows = [['Attractiveness', ai.score], ['Harmony', ai.harmony], ['Skin', ai.skin]];
+    return h('div', { class: 'ai-card' },
+      h('div', { class: 'row between' },
+        h('div', {},
+          h('p', { class: 'eyebrow' }, 'Second opinion'),
+          h('div', { class: 'display sm', style: { marginTop: '4px' } }, ai.tier || 'AI read')),
+        h('span', { class: 'ai-badge live' }, 'AI')),
+      h('div', { class: 'ai-rows mt-12' },
+        rows.map(([k, v]) => h('div', { class: 'ai-row' },
+          h('span', { class: 'k' }, k),
+          h('span', { class: 'v' }, num(v, 1))))),
+      ai.strengths && ai.strengths.length ? h('div', { class: 'mt-12' },
+        h('p', { class: 'eyebrow' }, 'Strengths'),
+        ai.strengths.map((s) => h('p', { class: 'small mt-4' }, '\u00b7 ' + s))) : null,
+      ai.improvements && ai.improvements.length ? h('div', { class: 'mt-12' },
+        h('p', { class: 'eyebrow' }, 'Worth working on'),
+        ai.improvements.map((s) => h('p', { class: 'small mt-4' }, '\u00b7 ' + s))) : null,
+      h('p', { class: 'tiny mt-12' }, 'Model estimate from this one photo, blended 50/50 with the geometric score. Not medical advice.'));
+  }
+
+  function aiCard(scan) {
+    return h('div', { id: 'ai-card' }, aiCardInner(scan));
   }
 
   /* ---------- landmark mesh ---------- */
@@ -2609,6 +2796,21 @@
               onClick: perm === 'denied' ? null : askNotifications
             })),
 
+      /* ai */
+      h('p', { class: 'sect rise', style: { '--i': 7.5 } }, 'AI read'),
+      h('div', { class: 'group rise', style: { '--i': 7.6 } },
+        growRow({
+          icon: I.sparkle, title: 'Second opinion',
+          sub: 'Sends the photo to Google Gemini for a model read, blended with your score.',
+          right: switchEl(!!aiSettings().consent, (v) => {
+            aiSettings().consent = v;
+            save();
+            toast(v ? 'AI read on \u2014 photos are sent when you ask' : 'AI read off \u2014 nothing leaves this device');
+          })
+        })),
+      h('p', { class: 'helper rise', style: { '--i': 7.7 } },
+        'Off by default. While it is on, each new scan sends one photo to Google. Everything else \u2014 scores, quests, history \u2014 still never leaves this device.'),
+
       /* scores & legal */
       h('p', { class: 'sect rise', style: { '--i': 8 } }, T('Scores & legal')),
       h('div', { class: 'group rise', style: { '--i': 9 } },
@@ -2662,6 +2864,9 @@
         ['h', 'What is stored'],
         ['p', 'Your profile answers (name, gender, birth date, height, skin type, focus), the score and pillar values of each scan, a small thumbnail of each scan, and your quest history.'],
         ['p', 'Face landmarks, the 478 measured points, are computed and discarded within the same moment. They are never written to storage.'],
+        ['h', 'AI read, if you turn it on'],
+        ['p', 'Off by default. While it is on, each scan sends one photo to Google Gemini to get a model estimate of attractiveness, harmony and skin. The photo is sent over HTTPS, used for that one answer, and not stored by Lumorph \u2014 there is no Lumorph server to store it on. Google\u2019s handling is governed by their API terms.'],
+        ['p', 'Turn it off in Settings and no photo leaves this device again. Scans you take while it is off are never sent, and existing scans are never re-sent unless you tap the button yourself.'],
         ['h', 'What is not stored'],
         ['p', 'No location, no contacts, no device identifiers, no analytics, no advertising identifiers, no crash reports. Lumorph makes no network request of its own after the app has loaded.'],
         ['h', 'Third parties'],
