@@ -90,6 +90,8 @@
     flip: SVG('<path d="M12 3.6v16.8"/><path d="M9.2 6.6 4.6 12l4.6 5.4z"/><path d="M14.8 6.6 19.4 12l-4.6 5.4z"/>'),
     clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>'),
     mesh: SVG('<path d="M12 3.2 4.4 7.6v8.8L12 20.8l7.6-4.4V7.6z"/><path d="M12 3.2v17.6"/><path d="M4.4 7.6 12 12l7.6-4.4"/><path d="M4.4 16.4 12 12l7.6 4.4"/>'),
+    plus: SVG('<path d="M12 5.2v13.6M5.2 12h13.6"/>'),
+    minus: SVG('<path d="M5.2 12h13.6"/>'),
     globe: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8"/><path d="M12 3.6c2.2 2.3 3.3 5.2 3.3 8.4s-1.1 6.1-3.3 8.4c-2.2-2.3-3.3-5.2-3.3-8.4S9.8 5.9 12 3.6z"/>'),
     share: SVG('<circle cx="17.4" cy="5.6" r="2.5"/><circle cx="6.6" cy="12" r="2.5"/><circle cx="17.4" cy="18.4" r="2.5"/><path d="M8.8 10.9 15.2 6.7"/><path d="M8.8 13.1l6.4 4.2"/>'),
     report: SVG('<path d="M6.6 3.8h6.6l4.4 4.4v12H6.6z"/><path d="M13.2 3.8v4.4h4.4"/><path d="M9.4 16.6v-3.4M12 16.6v-5.6M14.6 16.6v-2"/>'),
@@ -107,11 +109,37 @@
      Only a salted 64-bit digest of each code is in this file, so reading the
      source does not reveal a code. It cannot stop a determined brute force of
      a 4-8 character space - see SECURITY.md for what this does and does not do. */
+  const SCAN_COOLDOWN = 24 * 60 * 60 * 1000;
+
+  function scanState() {
+    const last = S.lastScanAt || 0;
+    const elapsed = last ? Date.now() - last : SCAN_COOLDOWN;
+    const msLeft = Math.max(0, SCAN_COOLDOWN - elapsed);
+    return { ready: msLeft === 0, msLeft, credits: Math.max(0, S.scanCredits || 0) };
+  }
+  function canScan() {
+    const s = scanState();
+    return s.ready || s.credits > 0;
+  }
+  function timeLeftText(ms) {
+    const total = Math.max(0, Math.ceil(ms / 60000));
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    if (h >= 1) return h + 'h' + (m ? ' ' + m + 'm' : '');
+    return m + 'm';
+  }
+  function consumeScan() {
+    const s = scanState();
+    if (s.ready) { S.lastScanAt = Date.now(); save(); return 'daily'; }
+    if (s.credits > 0) { S.scanCredits = s.credits - 1; save(); return 'credit'; }
+    return null;
+  }
+
   const CODE_SALT = 'lm$7k2p';
   const CODES = {
-    bdf9dd71b2e1a7ae: { xp: 100, badge: 'founder', label: 'Founder' },
-    '0c29712191afafb7': { xp: 300, badge: 'supporter', label: 'Supporter', perk: 'history' },
-    e5d1f87df1bbabe3: { xp: 200, badge: 'insider', label: 'Insider' }
+    bdf9dd71b2e1a7ae: { xp: 100, badge: 'founder', label: 'Founder', scans: 1 },
+    '0c29712191afafb7': { xp: 300, badge: 'supporter', label: 'Supporter', perk: 'history', scans: 3 },
+    e5d1f87df1bbabe3: { xp: 200, badge: 'insider', label: 'Insider', scans: 2 }
   };
   function digest(str) {
     let h1 = 0x811c9dc5, h2 = 0x01000193;
@@ -503,7 +531,7 @@
         step: 0,
         name: (S.profile && S.profile.name) || '',
         gender: (S.profile && S.profile.gender) || '',
-        birth: (S.profile && S.profile.birth) || '',
+        age: (S.profile && (S.profile.age || (S.profile.birth ? ageFrom(S.profile.birth) : 0))) || 0,
         height: (S.profile && S.profile.height) || 175,
         unit: 'cm',
         skin: (S.profile && S.profile.skin) || [],
@@ -528,11 +556,10 @@
     }
     if (step === 1) return onb.gender ? '' : 'Choose one so the right reference ranges are used.';
     if (step === 2) {
-      if (!onb.birth) return 'Add your date of birth to continue.';
-      const age = ageFrom(onb.birth);
-      if (!isFinite(age) || age < 0) return 'That date is in the future.';
-      if (age > 110) return 'That date does not look right.';
-      if (age < MIN_AGE) return 'You must be ' + MIN_AGE + ' or older to use Lumorph.';
+      if (!onb.age) return 'Set your age to continue.';
+      if (!isFinite(onb.age) || onb.age < 1) return 'Set your age to continue.';
+      if (onb.age < MIN_AGE) return 'You must be ' + MIN_AGE + ' or older to use Lumorph.';
+      if (onb.age > 110) return 'That age does not look right.';
       return '';
     }
     if (step === 3) {
@@ -612,7 +639,7 @@
       S.profile = {
         name: onb.name.trim().slice(0, NAME_MAX),
         gender: onb.gender,
-        birth: onb.birth,
+        age: onb.age,
         height: onb.height,
         skin: onb.skin.slice(),
         concerns: onb.concerns.slice()
@@ -682,32 +709,37 @@
     }
 
     if (onb.step === 2) {
-      const min = new Date();
-      min.setFullYear(min.getFullYear() - 110);
-      const pill = h('p', { class: 'pill gold ' + (onb.birth ? '' : 'hide'), style: { marginTop: '14px' } },
-        onb.birth ? 'Age ' + ageFrom(onb.birth) : '');
-      const dateInput = h('input', {
-        class: 'input', type: 'date', value: onb.birth,
-        max: todayKey(), min: min.toISOString().slice(0, 10),
-        onchange: (e) => {
-          onb.birth = e.target.value;
-          const age = ageFrom(onb.birth);
-          pill.textContent = onb.birth ? 'Age ' + age : '';
-          pill.classList.toggle('hide', !onb.birth);
-          clearErr();
-        }
-      });
+      const shown = () => (onb.age ? String(onb.age) : '\u2014');
+      const valueEl = h('div', { class: 'age-value' + (onb.age ? ' set' : '') }, shown());
+      const note = h('p', { class: 'age-note' },
+        onb.age && onb.age < MIN_AGE ? 'You must be ' + MIN_AGE + ' or older to use Lumorph.' : 'Tap + or \u2212 to set your age');
+
+      const setAge = (v) => {
+        onb.age = Math.max(1, Math.min(110, v));
+        valueEl.textContent = shown();
+        valueEl.classList.add('set');
+        note.textContent = onb.age < MIN_AGE ? 'You must be ' + MIN_AGE + ' or older to use Lumorph.' : 'Age ' + onb.age;
+        note.classList.toggle('warn', onb.age < MIN_AGE);
+        clearErr();
+      };
+
+      const stepBtn = (delta) => h('button', {
+        class: 'age-step', 'aria-label': delta > 0 ? 'One year older' : 'One year younger',
+        // the first tap lands on a neutral 18, then +/- moves one year at a time
+        onclick: () => setAge(onb.age ? onb.age + delta : 18)
+      }, h('span', { html: delta > 0 ? I.plus : I.minus, style: { display: 'grid', width: '22px', height: '22px' } }));
+
       body.append(
         h('p', { class: 'eyebrow ' + riseCls(0), style: rise(0) }, T('About you')),
         h('h1', { class: 'display lg ' + riseCls(1), style: Object.assign({ marginTop: '10px' }, rise(1)) },
-          'When were you ', h('em', {}, 'born'), '?'),
+          'How old are ', h('em', {}, 'you'), '?'),
         h('p', { class: 'lede ' + riseCls(2), style: rise(2) },
           'Age shifts what is normal for skin and structure. It is used for your plan, nothing else.'),
-        h('label', { class: 'field ' + riseCls(3), style: rise(3) },
-          h('span', { class: 'lab' }, T('Date of birth')),
-          dateInput,
-          h('span', { class: 'hint' }, 'You must be ' + MIN_AGE + ' or older to use Lumorph')),
-        pill
+        h('div', { class: 'age-picker ' + riseCls(3), style: rise(3) },
+          stepBtn(-1),
+          h('div', { class: 'age-mid' }, valueEl, h('div', { class: 'age-unit' }, 'years')),
+          stepBtn(1)),
+        note
       );
       foot.append(nextBtn(T('Continue'), advance));
     }
@@ -838,6 +870,13 @@
       label);
   }
 
+  function ageOf(profile) {
+    if (!profile) return null;
+    if (profile.age) return Number(profile.age);
+    if (profile.birth) return ageFrom(profile.birth);
+    return null;
+  }
+
   function ageFrom(birth) {
     if (!birth) return '';
     const b = new Date(birth), n = new Date();
@@ -910,7 +949,14 @@
           h('p', { class: 'eyebrow' }, T('Your baseline')),
           h('div', { class: 'display sm', style: { marginTop: '6px' } }, T('No scan yet')),
           h('p', { class: 'small mt-8' }, 'One photo, measured on this device, gives you every number in the app.'),
-          h('button', { class: 'btn primary mt-16', onclick: () => go('scan') }, 'Take your first scan')
+          (() => {
+            const st = scanState();
+            return st.ready || st.credits > 0
+              ? h('button', { class: 'btn primary mt-16', onclick: () => go('scan') }, 'Take your first scan')
+              : h('div', {},
+                  h('button', { class: 'btn ghost mt-16', disabled: true }, 'Next scan in ' + timeLeftText(st.msLeft)),
+                  h('p', { class: 'tiny mt-8' }, 'One scan a day. A promo code adds extra.'));
+          })()
         ]),
 
       /* routine */
@@ -1238,6 +1284,17 @@
     const demo = /demo=1/.test(location.search);
     flow = { step: 0, shots: [], demo };
 
+    if (!canScan()) {
+      const st = scanState();
+      root.append(h('div', { class: 'center', style: { paddingTop: '8vh' } },
+        h('p', { class: 'eyebrow' }, 'One scan a day'),
+        h('h1', { class: 'display lg', style: { marginTop: '10px' } }, 'Next scan in ', h('em', {}, timeLeftText(st.msLeft))),
+        h('p', { class: 'lede', style: { marginTop: '16px' } },
+          'A daily scan keeps the number comparable. Promo codes add extra scans without changing the wait.'),
+        h('button', { class: 'btn primary mt-20', onclick: () => go('home') }, 'Back to home')));
+      return;
+    }
+
     const video = h('video', { playsinline: true, autoplay: true, muted: true });
     const guide = h('div', { class: 'cam-guide', html: guideMarkup(0) });
     const stepPill = h('div', { class: 'cam-step' }, h('span', { class: 'dot' }), '1 of 2 · ' + T('Front'));
@@ -1272,6 +1329,12 @@
       h('div', { class: 'shutter-row rise', style: { '--i': 3 } }, shutter),
       skipSide,
       fileInput,
+      (() => {
+        const st = scanState();
+        if (!st.credits) return null;
+        return h('p', { class: 'tiny center mt-12 rise', style: { '--i': 4 } },
+          st.credits + ' bonus scan' + (st.credits > 1 ? 's' : '') + ' left from codes');
+      })(),
       h('p', { class: 'tiny center mt-16 rise', style: { '--i': 4 } },
         aiSettings().consent
           ? 'Measured in this tab. AI read is on, so each scan sends one photo to Google.'
@@ -1621,6 +1684,7 @@
         quality: { ok: quality.ok, chips: (quality.chips || []).map((c) => ({ id: c.id, label: c.label, ok: c.ok })) },
         thumb
       };
+      consumeScan();
       S.scans.push(scan);
       const cap = (S.badges && S.badges.supporter) ? 200 : 60;
       if (S.scans.length > cap) S.scans.shift();
@@ -2654,7 +2718,7 @@
       h('div', { class: 'card mt-12 rise', style: { '--i': 2 } },
         h('div', { class: 'row between' },
           kv(T('Gender'), (S.profile.gender || '\u2014').replace(/^./, (m) => m.toUpperCase())),
-          kv(T('Age'), S.profile.birth ? String(ageFrom(S.profile.birth)) : '\u2014'),
+          kv(T('Age'), ageOf(S.profile) ? String(ageOf(S.profile)) : '\u2014'),
           kv(T('Height'), S.profile.height ? S.profile.height + ' cm' : '\u2014'))),
 
       h('p', { class: 'eyebrow mt-20 rise', style: { '--i': 3 } }, T('Skin')),
@@ -2980,7 +3044,7 @@
         ['h', 'The short version'],
         ['p', 'Lumorph has no server. Your photos, measurements, quests and scores are stored in this browser on this device. Nothing is uploaded, transmitted, sold or shared, because there is nowhere for it to go.'],
         ['h', 'What is stored'],
-        ['p', 'Your profile answers (name, gender, birth date, height, skin type, focus), the score and pillar values of each scan, a small thumbnail of each scan, and your quest history.'],
+        ['p', 'Your profile answers (name, gender, age, height, skin type, focus), the score and pillar values of each scan, a small thumbnail of each scan, and your quest history.'],
         ['p', 'Face landmarks, the 478 measured points, are computed and discarded within the same moment. They are never written to storage.'],
         ['h', 'AI read, if you turn it on'],
         ['p', 'Off by default. While it is on, each scan sends one photo to Google Gemini to get a model estimate of attractiveness, harmony and skin. The photo is sent over HTTPS, used for that one answer, and not stored by Lumorph \u2014 there is no Lumorph server to store it on. Google\u2019s handling is governed by their API terms.'],
@@ -2996,7 +3060,7 @@
         ['h', 'Deleting'],
         ['p', 'Delete all data in Settings removes everything immediately and permanently. Clearing your browser data does the same. Export first if you want a copy.'],
         ['h', 'Children'],
-        ['p', 'Lumorph is not intended for anyone under 13, and the app refuses a birth date that would make you younger.']
+        ['p', 'Lumorph is not intended for anyone under 13, and the app will not accept an age below 13.']
       ]
     },
     terms: {
@@ -3076,13 +3140,14 @@
 
       S.promos[key] = Date.now();
       S.xp += reward.xp;
+      if (reward.scans) S.scanCredits = (S.scanCredits || 0) + reward.scans;
       S.badges = S.badges || {};
       if (reward.badge) S.badges[reward.badge] = true;
       S.promoTries = { n: 0, until: 0 };
       save();
       closeSheet();
       haptic(20);
-      toast('+' + reward.xp + ' XP' + (reward.label ? ' \u00b7 ' + reward.label + ' unlocked' : ''));
+      toast('+' + reward.xp + ' XP' + (reward.scans ? ' \u00b7 +' + reward.scans + ' scan' + (reward.scans > 1 ? 's' : '') : ''));
       go('settings');
     };
 

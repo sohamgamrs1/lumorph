@@ -892,6 +892,55 @@ a { color: inherit; }
   background: rgba(234, 213, 162, 0.12);
 }
 
+/* ---------- age stepper ---------- */
+.age-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 34px;
+  padding: 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--surface);
+}
+.age-step {
+  flex: 0 0 auto;
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  color: var(--gold);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  transition: transform 160ms var(--spring), background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.age-step:active { transform: scale(0.92); background: var(--gold-soft); }
+.age-mid { flex: 1; text-align: center; }
+.age-value {
+  font-family: var(--serif);
+  font-size: 76px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--faint);
+  transition: color var(--t-mid) var(--ease);
+}
+.age-value.set { color: var(--ink); }
+.age-unit {
+  margin-top: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.age-note {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  min-height: 18px;
+}
+.age-note.warn { color: var(--danger); }
+
 /* ---------- consent bar ---------- */
 .consent-bar {
   position: fixed;
