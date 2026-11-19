@@ -308,6 +308,8 @@
     view.classList.toggle('no-tabs', name === 'onboarding' || name === 'processing' || name === 'scan');
     paintTabbar(isTab ? name : '');
     if (isTab) paintTopbar(name);
+    setPageMeta(name);
+    trackPage(name);
     window.scrollTo(0, 0);
     reveal(view);
     fillBars(view);
@@ -316,6 +318,76 @@
     const name = (e.state && e.state.r) || (location.hash || '').replace('#/', '') || 'home';
     if (name !== route) go(name, { fromHistory: true });
   });
+
+  const ROUTE_META = {
+    home: ['Lumorph — your dashboard', 'Your face score, today\u2019s quests and the routine built around your skin.'],
+    scan: ['Scan your face — Lumorph', 'Take a scan. It is measured on your device and never uploaded.'],
+    results: ['Your results — Lumorph', 'Your face score, the five pillars behind it, and what to work on next.'],
+    progress: ['Progress — Lumorph', 'Every scan charted, with your streak and your week.'],
+    profile: ['Profile — Lumorph', 'Your details, badges and settings.'],
+    settings: ['Settings and privacy — Lumorph', 'Appearance, language, notifications, data and legal.'],
+    routine: ['Your routine — Lumorph', 'The skincare and grooming routine built from your scan.'],
+    how: ['How the scores are calculated — Lumorph', 'Every measurement, its weight, and what a photograph cannot tell you.'],
+    onboarding: ['Welcome — Lumorph', 'Set up your profile in a few taps.'],
+    processing: ['Reading your scan — Lumorph', 'Measuring your face and reading your skin.']
+  };
+
+  function setPageMeta(name) {
+    const meta = ROUTE_META[name];
+    if (!meta) return;
+    document.title = meta[0];
+    const d = document.querySelector('meta[name="description"]');
+    if (d) d.setAttribute('content', meta[1]);
+    const ogt = document.querySelector('meta[property="og:title"]');
+    if (ogt) ogt.setAttribute('content', meta[0]);
+    const ogd = document.querySelector('meta[property="og:description"]');
+    if (ogd) ogd.setAttribute('content', meta[1]);
+  }
+
+  /* ---------- analytics, off unless an id is configured ---------- */
+  function analyticsId() {
+    const m = document.querySelector('meta[name="lumorph-analytics"]');
+    return (m && /^G-[A-Z0-9]+$/i.test(m.content || '')) ? m.content : '';
+  }
+  function analyticsConsent() {
+    return S.settings ? S.settings.analyticsConsent : undefined;
+  }
+  let gaLoaded = false;
+  function loadAnalytics() {
+    const id = analyticsId();
+    if (!id || gaLoaded) return;
+    gaLoaded = true;
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;
+    document.head.append(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', id, { anonymize_ip: true, send_page_view: false });
+  }
+  function trackPage(name) {
+    if (!gaLoaded || !window.gtag) return;
+    window.gtag('event', 'page_view', {
+      page_title: document.title,
+      page_location: location.href,
+      page_path: '/' + name
+    });
+  }
+
+  function analyticsBanner() {
+    if (!analyticsId() || analyticsConsent() !== undefined) return;
+    const bar = h('div', { class: 'consent-bar' },
+      h('p', {}, 'Count a page view so we know the app is being used? No photos, no scores, nothing you type.'),
+      h('div', { class: 'row gap-8' },
+        h('button', { class: 'btn small ghost', onclick: () => {
+          S.settings.analyticsConsent = false; save(); bar.remove();
+        } }, 'No thanks'),
+        h('button', { class: 'btn small primary', onclick: () => {
+          S.settings.analyticsConsent = true; save(); bar.remove(); loadAnalytics(); trackPage(route);
+        } }, 'Allow')));
+    document.body.append(bar);
+  }
 
   function positionTabGlow() {
     const inner = tabbar.querySelector('.inner');
@@ -3222,6 +3294,9 @@
       setTimeout(() => { if (splash.parentNode) splash.remove(); }, 620);
     }, Math.max(0, MIN - (performance.now() - started)));
   })();
+
+  if (S.settings && S.settings.analyticsConsent === true) loadAnalytics();
+  setTimeout(analyticsBanner, 1200);
 
   notifSettings();
   scheduleReminders();

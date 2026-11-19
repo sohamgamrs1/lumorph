@@ -1,0 +1,6 @@
+# Lumorph
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://lumorph.vercel.app/sitemap.xml
