@@ -1187,12 +1187,19 @@
     if (cam.stream) { cam.stream.getTracks().forEach((t) => t.stop()); cam.stream = null; }
   }
 
+  const MP_VERSION = '0.10.14';
+  const MP_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MP_VERSION;
+
   async function ensureLandmarker() {
     if (cam.lmReady) return cam.lmReady;
     cam.lmReady = (async () => {
-      const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
-      const fileset = await vision.FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      const vision = await import(MP_CDN);
+      // the package is pinned, but a CDN can still serve something else: check
+      // that the API we depend on is actually there before using it
+      if (!vision || typeof vision.FilesetResolver !== 'function' || typeof vision.FaceLandmarker !== 'function') {
+        throw new Error('face model package ' + MP_VERSION + ' did not load correctly');
+      }
+      const fileset = await vision.FilesetResolver.forVisionTasks(MP_CDN + '/wasm');
       try {
         const tess = vision.FaceLandmarker.FACE_LANDMARKS_TESSELATION;
         if (tess && tess.length) cam.meshLines = tess.map((c) => [c.start, c.end]);
@@ -1470,7 +1477,21 @@
     fileInput.addEventListener('change', async (e) => {
       const f = e.target.files && e.target.files[0];
       if (!f) return;
+
+      const MAX_UPLOAD = 12 * 1024 * 1024;
+      if (!/^image\/(jpeg|png|webp)$/i.test(f.type)) {
+        toast('Use a JPEG, PNG or WebP photo');
+        fileInput.value = '';
+        return;
+      }
+      if (f.size > MAX_UPLOAD) {
+        toast('That photo is ' + (f.size / 1048576).toFixed(1) + 'MB. Keep it under 12MB.');
+        fileInput.value = '';
+        return;
+      }
+
       const img = new Image();
+      const objectUrl = URL.createObjectURL(f);
       img.onload = async () => {
         try {
           const lm = await ensureLandmarker();
@@ -1485,7 +1506,9 @@
           toast('Could not read that photo');
         }
       };
-      img.src = URL.createObjectURL(f);
+      img.onerror = () => { toast('That file could not be opened as an image'); URL.revokeObjectURL(objectUrl); };
+      img.onloadend = () => setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+      img.src = objectUrl;
     });
 
     if (S.onboarded) boot(); else go('onboarding');
@@ -1825,7 +1848,7 @@
   function toJpegDataUrl(src, width, quality) {
     const w = src.naturalWidth || src.videoWidth || src.width;
     const h = src.naturalHeight || src.videoHeight || src.height;
-    if (!w || !h) return null;
+    if (!w || !h || w > 12000 || h > 12000) return null;
     const scale = Math.min(1, width / w);
     const cv = document.createElement('canvas');
     cv.width = Math.round(w * scale);
@@ -2962,6 +2985,10 @@
         ['h', 'AI read, if you turn it on'],
         ['p', 'Off by default. While it is on, each scan sends one photo to Google Gemini to get a model estimate of attractiveness, harmony and skin. The photo is sent over HTTPS, used for that one answer, and not stored by Lumorph \u2014 there is no Lumorph server to store it on. Google\u2019s handling is governed by their API terms.'],
         ['p', 'Turn it off in Settings and no photo leaves this device again. Scans you take while it is off are never sent, and existing scans are never re-sent unless you tap the button yourself.'],
+        ['h', 'Security and abuse prevention'],
+        ['p', 'When the AI read is used, the request passes through a rate limiter that looks at your IP address for a few minutes to stop the service being spammed and to protect the owner\u2019s API key. The address is held in memory only: never written to a database, never stored beside a photo, and discarded when the window closes.'],
+        ['p', 'Request bodies are not kept. The photo exists in memory for the length of a single request and is then dropped. Nothing is written to a log.'],
+        ['p', 'Uploads are checked before they leave your device: only JPEG, PNG and WebP under 12MB are accepted, and the copy sent for an AI read is resized to 768 pixels first.'],
         ['h', 'What is not stored'],
         ['p', 'No location, no contacts, no device identifiers, no analytics, no advertising identifiers, no crash reports. Lumorph makes no network request of its own after the app has loaded.'],
         ['h', 'Third parties'],

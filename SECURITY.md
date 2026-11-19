@@ -23,6 +23,27 @@ Obfuscation raises the effort. It never closes the door. Shipping a 300KB obfusc
 
 What makes this acceptable here: **the numbers are only ever visible to the person who edited them.** There is no leaderboard, no sharing, no server, no prize. Cheating at Lumorph means lying to yourself in private, which is not a security problem — it is the same as not doing the scan.
 
+## Rate limiting, and its honest limit
+
+`/api/rate` is the only endpoint that can cost money, so it is the only one worth
+attacking. It is defended in layers:
+
+- **Per IP:** 6 requests a minute, 30 an hour.
+- **Per instance:** 300 requests an hour across everyone, so one warm instance cannot
+  be made to spend without bound.
+- **Origin check:** a browser request whose Origin does not match the deployment is
+  refused outright.
+- **Strict input validation:** JSON content type, a single `image` field and nothing
+  else, a base64 JPEG/PNG/WebP data URL, decoded bytes between 1KB and 2.5MB, and the
+  file's magic bytes checked rather than trusting its label.
+- **Every failure returns a sentence**, not a code, so a caller always knows what to fix.
+
+The limit that cannot be fixed in code: the counters live in one serverless instance's
+memory. A distributed attacker rotating IPs across cold starts is not stopped by this.
+Real protection needs shared state — Upstash Redis or Vercel KV — which is the next step
+if the key ever looks like it is being drained. Set a spending cap on the Google Cloud
+project as well; that is the backstop no application code can replace.
+
 ## What is done
 
 - **No secrets in the client.** There is no API key, no token, no database URL. Nothing to steal.

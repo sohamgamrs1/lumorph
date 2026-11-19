@@ -1,0 +1,12 @@
+{
+  "name": "lumorph",
+  "version": "1.15.0",
+  "private": true,
+  "description": "Lookmaxxing, free for everyone. On-device face scoring PWA.",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "build": "node build.js"
+  }
+}
