@@ -4719,19 +4719,23 @@ setTimeout(function () {
     const scoreTxt = scan.overall.toFixed(1);
     ctx.fillText(scoreTxt, pad - 6, 620);
 
+    // the three lines beside the score need real leading between them: at 26px,
+    // 62px and 34px, 40px of gap made them collide
     const scoreW = ctx.measureText(scoreTxt).width;
+    const tx = pad + scoreW + 30;
+
     ctx.fillStyle = 'rgba(155,150,140,0.9)';
     ctx.font = '500 26px ' + SANS;
-    ctx.fillText('out of 10', pad + scoreW + 26, 560);
+    ctx.fillText('out of 10', tx, 468);
 
     ctx.fillStyle = '#F6F1E7';
-    ctx.font = '400 62px ' + SERIF;
-    ctx.fillText(scoreWordFor(scan.overall), pad + scoreW + 26, 600);
+    ctx.font = '400 60px ' + SERIF;
+    ctx.fillText(scoreWordFor(scan.overall), tx, 560);
 
     const tier = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
     ctx.fillStyle = 'rgba(234,213,162,0.95)';
     ctx.font = '400 34px ' + SERIF;
-    ctx.fillText(tier.label, pad + scoreW + 26, 650);
+    ctx.fillText(tier.label, tx, 618);
 
     // pillars
     const pillars = [
