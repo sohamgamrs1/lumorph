@@ -10,21 +10,60 @@
 const CONFIGURED = (process.env.GEMINI_MODEL || '').trim();
 const ALIAS = 'gemini-flash-latest';
 let cachedModel = null;
-const MAX_BYTES = 3 * 1024 * 1024;
+const MAX_BYTES = 2.5 * 1024 * 1024;
+const MAX_B64 = Math.ceil(MAX_BYTES * 1.37);
+const MIN_BYTES = 1024;
 
-/* very small in-memory limiter: survives within one warm instance, which is
-   enough to blunt a naive loop against the key */
-const hits = new Map();
-const WINDOW = 60 * 1000;
-const LIMIT = 12;
+/* Layered limiter. Memory lives inside one warm serverless instance, so this
+   bounds what any single instance can be made to spend, not the fleet. A
+   distributed attacker needs shared state (Upstash, Vercel KV) to stop for
+   real - see SECURITY.md. What this does stop: one person or one script
+   hammering the key, and a runaway client loop. */
+const LIMITS = { ipMinute: 6, ipHour: 30, globalHour: 300 };
+const ipHits = new Map();
+const globalHits = [];
 
-function limited(ip) {
+function prune(list, cutoff) {
+  while (list.length && list[0] < cutoff) list.shift();
+}
+
+function checkRate(ip) {
   const now = Date.now();
-  const rec = hits.get(ip) || { n: 0, t: now };
-  if (now - rec.t > WINDOW) { rec.n = 0; rec.t = now; }
-  rec.n += 1;
-  hits.set(ip, rec);
-  return rec.n > LIMIT;
+  const minuteAgo = now - 60 * 1000;
+  const hourAgo = now - 60 * 60 * 1000;
+
+  prune(globalHits, hourAgo);
+  if (globalHits.length >= LIMITS.globalHour) {
+    return { ok: false, retry: Math.ceil((globalHits[0] + 3600000 - now) / 1000), scope: 'service' };
+  }
+
+  const mine = ipHits.get(ip) || [];
+  prune(mine, hourAgo);
+  ipHits.set(ip, mine);
+
+  const lastMinute = mine.filter((t) => t > minuteAgo).length;
+  if (lastMinute >= LIMITS.ipMinute) {
+    const oldest = mine.filter((t) => t > minuteAgo)[0];
+    return { ok: false, retry: Math.max(1, Math.ceil((oldest + 60000 - now) / 1000)), scope: 'device' };
+  }
+  if (mine.length >= LIMITS.ipHour) {
+    return { ok: false, retry: Math.max(1, Math.ceil((mine[0] + 3600000 - now) / 1000)), scope: 'device' };
+  }
+
+  mine.push(now);
+  globalHits.push(now);
+
+  // keep the map from growing without bound
+  if (ipHits.size > 5000) {
+    const oldest = ipHits.keys().next().value;
+    ipHits.delete(oldest);
+  }
+  return { ok: true };
+}
+
+/* every failure carries a sentence, never a bare code */
+function fail(res, status, code, message, extra) {
+  res.status(status).json(Object.assign({ ok: false, error: code, message }, extra || {}));
 }
 
 const SCHEMA = {
@@ -137,39 +176,98 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'method_not_allowed' });
+    res.setHeader('Allow', 'POST');
+    fail(res, 405, 'method_not_allowed', 'This endpoint only accepts POST requests.');
     return;
+  }
+
+  // a browser sends Origin on a cross-origin POST; refuse a mismatch outright
+  const origin = req.headers.origin || '';
+  if (origin) {
+    let ok = false;
+    try { ok = new URL(origin).host === (req.headers.host || ''); } catch (e) { ok = false; }
+    if (!ok) {
+      fail(res, 403, 'bad_origin', 'Requests must come from the Lumorph site itself.');
+      return;
+    }
   }
 
   const key = process.env.GEMINI_KEY;
   if (!key) {
-    res.status(503).json({ error: 'not_configured', message: 'GEMINI_KEY is not set on this deployment.' });
+    fail(res, 503, 'not_configured', 'The AI read is not set up on this deployment yet. Ask the owner to add GEMINI_KEY.');
     return;
   }
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
-  if (limited(ip)) {
-    res.status(429).json({ error: 'rate_limited', message: 'Too many reads from this device. Try again in a minute.' });
+  const rate = checkRate(ip);
+  if (!rate.ok) {
+    res.setHeader('Retry-After', String(rate.retry));
+    fail(res, 429, 'rate_limited',
+      rate.scope === 'service'
+        ? 'The AI read is at its hourly limit for everyone. Try again in about ' + Math.ceil(rate.retry / 60) + ' minutes.'
+        : 'That is a lot of reads in a short time. Try again in ' + rate.retry + ' seconds.',
+      { retry_after: rate.retry });
     return;
   }
 
-  let image = '';
+  const ctype = String(req.headers['content-type'] || '');
+  if (ctype.indexOf('application/json') < 0) {
+    fail(res, 415, 'bad_content_type', 'Send the request as JSON.');
+    return;
+  }
+
+  let body;
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    image = body.image || '';
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
   } catch (e) {
-    res.status(400).json({ error: 'bad_body' });
+    fail(res, 400, 'bad_json', 'That request body was not valid JSON.');
+    return;
+  }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    fail(res, 400, 'bad_body', 'Send an object with a single "image" field.');
     return;
   }
 
-  if (!image || typeof image !== 'string') {
-    res.status(400).json({ error: 'no_image' });
+  const extra = Object.keys(body).filter((k) => k !== 'image');
+  if (extra.length) {
+    fail(res, 400, 'unexpected_fields', 'This endpoint only accepts an "image" field.');
     return;
   }
 
-  const b64 = image.replace(/^data:image\/[a-z]+;base64,/i, '');
-  if (b64.length * 0.75 > MAX_BYTES) {
-    res.status(413).json({ error: 'too_large' });
+  const image = body.image;
+  if (typeof image !== 'string' || !image) {
+    fail(res, 400, 'no_image', 'No photo was included in the request.');
+    return;
+  }
+
+  if (!/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+$/i.test(image)) {
+    fail(res, 400, 'bad_image', 'The photo must be a base64 JPEG, PNG or WebP data URL.');
+    return;
+  }
+
+  if (image.length > MAX_B64) {
+    fail(res, 413, 'too_large', 'That photo is too large. Lumorph sends a resized copy under 2.5MB.');
+    return;
+  }
+
+  const b64 = image.replace(/^data:image\/[a-z]+;base64,/i, '').replace(/\s+/g, '');
+  const bytes = Buffer.from(b64, 'base64');
+
+  if (bytes.length < MIN_BYTES) {
+    fail(res, 400, 'image_too_small', 'That photo is too small to read a face from.');
+    return;
+  }
+  if (bytes.length > MAX_BYTES) {
+    fail(res, 413, 'too_large', 'That photo is too large. Lumorph sends a resized copy under 2.5MB.');
+    return;
+  }
+
+  // trust the bytes, not the label: a data URL claiming JPEG should start like one
+  const isJpeg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+  const isWebp = bytes.slice(0, 4).toString('ascii') === 'RIFF' && bytes.slice(8, 12).toString('ascii') === 'WEBP';
+  if (!isJpeg && !isPng && !isWebp) {
+    fail(res, 415, 'not_an_image', 'That file is not a JPEG, PNG or WebP image.');
     return;
   }
 
@@ -217,10 +315,8 @@ module.exports = async function handler(req, res) {
   }
 
   if (!upstream) {
-    res.status(502).json({
-      error: 'no_model',
-      message: 'None of the Gemini models this build knows about are available. Set GEMINI_MODEL in Vercel to a current model name.'
-    });
+    fail(res, 502, 'no_model',
+      'None of the AI models this build knows about are available right now. Set GEMINI_MODEL in Vercel to a current model name.');
     return;
   }
 
@@ -230,10 +326,8 @@ module.exports = async function handler(req, res) {
       const j = await upstream.json();
       detail = (j.error && j.error.message) || '';
     } catch (e) { /* ignore */ }
-    res.status(upstream.status === 429 ? 429 : 502).json({
-      error: upstream.status === 429 ? 'quota' : 'upstream',
-      message: detail.slice(0, 200) || 'The model did not answer.'
-    });
+    fail(res, upstream.status === 429 ? 429 : 502,
+      upstream.status === 429 ? 'quota' : 'upstream', friendly(upstream.status, detail));
     return;
   }
 
@@ -241,7 +335,7 @@ module.exports = async function handler(req, res) {
   try {
     payload = await upstream.json();
   } catch (e) {
-    res.status(502).json({ error: 'upstream_parse' });
+    fail(res, 502, 'upstream_parse', 'The AI service sent back something unreadable. Try again.');
     return;
   }
 
@@ -250,7 +344,7 @@ module.exports = async function handler(req, res) {
     cand.content.parts.map((p) => p.text || '').join('');
 
   if (!text) {
-    res.status(502).json({ error: 'empty', message: 'The model returned nothing usable.' });
+    fail(res, 502, 'empty', 'The AI service returned nothing usable. Try again.');
     return;
   }
 
@@ -258,7 +352,7 @@ module.exports = async function handler(req, res) {
   try {
     out = JSON.parse(text);
   } catch (e) {
-    res.status(502).json({ error: 'bad_json' });
+    fail(res, 502, 'bad_json', 'The AI service answered in a format this build cannot read.');
     return;
   }
 
@@ -266,6 +360,7 @@ module.exports = async function handler(req, res) {
   const clean = (arr) => (Array.isArray(arr) ? arr.filter((s) => typeof s === 'string').slice(0, 3) : []);
 
   res.status(200).json({
+    ok: true,
     model: usedModel || cachedModel || '',
     face_found: !!out.face_found,
     attractiveness: clamp(out.attractiveness),
