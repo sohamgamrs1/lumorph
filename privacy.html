@@ -70,11 +70,6 @@ footer a:hover{color:var(--gold)}
 <h2>Analytics</h2>
 <p>Lumorph does not run analytics by default. If measurement is enabled on this deployment, it counts page views only — never photos, scores, or anything you type. Visitors in the EU, UK and Switzerland are asked first, and nothing is loaded until they agree.</p>
 
-<h2>Security and abuse prevention</h2>
-<p>When the AI read is used, the request passes through a rate limiter that looks at your IP address for a few minutes to stop the service being spammed and to protect the owner's API key. The address is held in memory only: never written to a database, never stored beside a photo, and discarded when the window closes.</p>
-<p>Request bodies are not kept. The photo exists in memory for the length of a single request and is then dropped. Nothing is written to a log.</p>
-<p>Uploads are checked before they leave your device: only JPEG, PNG and WebP under 12MB are accepted, and the copy sent for an AI read is resized to 768 pixels first.</p>
-
 <h2>Third parties</h2>
 <p>Two public resources are downloaded once and cached: the MediaPipe face landmarker and the two typefaces. Both are served by their own CDNs, which see an ordinary web request. After that the app runs offline.</p>
 
