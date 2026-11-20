@@ -109,6 +109,50 @@
      Only a salted 64-bit digest of each code is in this file, so reading the
      source does not reveal a code. It cannot stop a determined brute force of
      a 4-8 character space - see SECURITY.md for what this does and does not do. */
+  const METRIC_IDS = E.METRICS.map((m) => m.id);
+
+  function calibrationRows() {
+    return (S.scans || []).filter((s) => s.metrics).map((s) => {
+      const when = s.at ? new Date(s.at) : null;
+      const row = {
+        id: s.id,
+        date: when && !isNaN(when.getTime()) ? when.toISOString() : '',
+        gender: (S.profile && S.profile.gender) || '',
+        age: ageOf(S.profile) || '',
+        score: s.overall,
+        tier: E.tierFor(s.overall, (S.profile && S.profile.gender) || 'other').short,
+        feedback: s.feedback || '',
+        yours: s.yours == null ? '' : s.yours
+      };
+      METRIC_IDS.forEach((k) => { row[k] = s.metrics[k] == null ? '' : s.metrics[k]; });
+      return row;
+    });
+  }
+
+  function calibrationCSV() {
+    const rows = calibrationRows();
+    if (!rows.length) return '';
+    const head = Object.keys(rows[0]);
+    const esc = (v) => {
+      const str = String(v == null ? '' : v);
+      return /[",\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+    };
+    return [head.join(',')].concat(rows.map((r) => head.map((h) => esc(r[h])).join(','))).join('\n');
+  }
+
+  function downloadCalibration() {
+    const csv = calibrationCSV();
+    if (!csv) { toast('No scans with measurements yet'); return; }
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a2 = document.createElement('a');
+    a2.href = url;
+    a2.download = 'lumorph-calibration-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a2.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast(calibrationRows().length + ' scans exported');
+  }
+
   const SCAN_COOLDOWN = 24 * 60 * 60 * 1000;
 
   function scanState() {
@@ -1241,6 +1285,7 @@
     if (cam.stream) { cam.stream.getTracks().forEach((t) => t.stop()); cam.stream = null; }
   }
 
+  const WARMUP_SECONDS = 7;
   const MP_VERSION = '0.10.14';
   const MP_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MP_VERSION;
 
@@ -1310,7 +1355,15 @@
     const flash = h('div', { class: 'cam-flash' });
     const meshCanvas = h('canvas', { class: 'cam-mesh' });
     const meshBtn = h('button', { class: 'cam-toggle', 'aria-pressed': 'true' }, 'Mesh');
-    const panel = h('div', { class: 'cam-panel' }, video, meshCanvas, guide, stepPill, hint, flash, meshBtn);
+    const warmNum = h('div', { class: 'warm-num' }, String(WARMUP_SECONDS));
+    const warmBar = h('div', { class: 'warm-bar' }, h('i', {}));
+    const warmup = h('div', { class: 'warmup' },
+      h('div', { class: 'warm-inner' },
+        h('div', { class: 'warm-ring' }, warmNum),
+        h('p', { class: 'warm-label' }, 'Getting the camera ready'),
+        h('p', { class: 'warm-sub' }, 'The face model is loading once. It is cached after this.')));
+
+    const panel = h('div', { class: 'cam-panel' }, video, meshCanvas, guide, stepPill, hint, flash, meshBtn, warmup);
     const chips = h('div', { class: 'cam-chips' });
     const fileInput = h('input', { type: 'file', accept: 'image/*', class: 'hide' });
 
@@ -1339,7 +1392,7 @@
       fileInput,
       (() => {
         const st = scanState();
-        if (!st.credits) return null;
+        if (!st.credits) return h('span', { class: 'hide' });
         return h('p', { class: 'tiny center mt-12 rise', style: { '--i': 4 } },
           st.credits + ' bonus scan' + (st.credits > 1 ? 's' : '') + ' left from codes');
       })(),
@@ -1426,15 +1479,50 @@
         cam.active = true;
         video.srcObject = stream;
         await video.play();
-        hint.textContent = 'Loading the face model\u2026';
         stepPill.style.opacity = '0.6';
+
+        // the model is a few megabytes on a cold visit; show the wait rather than
+        // a dead shutter, and never open the gate before it is actually ready
         let lm = null;
-        try {
-          lm = await ensureLandmarker();
-        } catch (e) {
+        const ready = (async () => {
+          try { return await ensureLandmarker(); } catch (e) { return null; }
+        })();
+
+        if (!cam.lmCached) {
+          warmup.classList.add('show');
+          let left = WARMUP_SECONDS;
+          warmNum.textContent = String(left);
+          const started = performance.now();
+          await new Promise((done) => {
+            const step = () => {
+              const elapsed = (performance.now() - started) / 1000;
+              const pct = Math.min(1, elapsed / WARMUP_SECONDS);
+              warmBar.firstChild.style.transform = 'scaleX(' + pct + ')';
+              const remain = Math.max(0, Math.ceil(WARMUP_SECONDS - elapsed));
+              if (remain !== left) { left = remain; warmNum.textContent = String(remain); }
+              if (elapsed >= WARMUP_SECONDS) { done(); return; }
+              requestAnimationFrame(step);
+            };
+            step();
+          });
+          // if the countdown finished before the model did, keep waiting honestly,
+          // but never forever: a stalled download must end in an error, not a spinner
+          warmNum.textContent = '\u2026';
+          lm = await Promise.race([
+            ready,
+            new Promise((r) => setTimeout(() => r(null), 25000))
+          ]);
+          warmup.classList.remove('show');
+        } else {
+          lm = await ready;
+        }
+
+        if (!lm) {
           hint.textContent = 'The face model could not load \u2014 use Upload instead';
+          warmup.classList.remove('show');
           return;
         }
+        cam.lmCached = true;
         stepPill.style.opacity = '1';
         hint.textContent = 'Line your face up with the oval';
         const tick = () => {
@@ -1686,6 +1774,11 @@
         focus: res.focus,
         metrics,
         side,
+        metrics: (() => {
+          const m = {};
+          Object.keys(metrics).forEach((k) => { if (k !== '_geo' && isFinite(metrics[k])) m[k] = Math.round(metrics[k] * 10000) / 10000; });
+          return m;
+        })(),
         lowConfidence,
         lm: E.encodeLandmarks(f.lm),
         demo: !f.source && /demo=1/.test(location.search),
@@ -1797,6 +1890,7 @@
             scan.lowConfidence ? h('p', { class: 'tiny mt-8', style: { color: 'var(--gold)' } },
               'Provisional \u2014 the photo was off-angle or dim. Retake it straight-on in even light.') : null))),
       h('div', { class: 'rise', style: { '--i': 1 } }, aiCard(scan)),
+      h('div', { class: 'rise', style: { '--i': 1.4 } }, feedbackCard(scan)),
 
       h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
         h('div', { class: 'card-h' }, h('div', { class: 'eyebrow' }, T('Pillars'))),
@@ -2050,6 +2144,39 @@
         h('p', { class: 'eyebrow' }, 'Worth working on'),
         ai.improvements.map((s) => h('p', { class: 'small mt-4' }, '\u00b7 ' + s))) : null,
       h('p', { class: 'tiny mt-12' }, 'Model estimate from this one photo, weighted 65% against 35% for the geometric score. Not medical advice.'));
+  }
+
+  function feedbackCard(scan) {
+    const setFeedback = (v) => {
+      scan.feedback = scan.feedback === v ? '' : v;
+      save();
+      const host = document.getElementById('feedback-card');
+      if (host) { host.innerHTML = ''; host.append(feedbackInner(scan)); }
+    };
+
+    function feedbackInner(sc) {
+      const yours = h('input', {
+        class: 'input tiny-input', type: 'number', min: '0', max: '10', step: '0.1',
+        placeholder: '—', value: sc.yours == null ? '' : String(sc.yours),
+        oninput: (e) => {
+          const v = e.target.value === '' ? null : Math.max(0, Math.min(10, Number(e.target.value)));
+          sc.yours = v;
+          save();
+        }
+      });
+      return h('div', { class: 'card mt-16' },
+        h('p', { class: 'eyebrow' }, 'Calibration'),
+        h('p', { class: 'small mt-8' }, 'Does this number feel right to you? Your answer stays on this device and helps tune the scoring.'),
+        h('div', { class: 'row gap-8 mt-12' },
+          h('button', { class: 'btn small ' + (sc.feedback === 'down' ? 'primary' : 'ghost'), onclick: () => setFeedback('down') }, 'Too low'),
+          h('button', { class: 'btn small ' + (sc.feedback === 'up' ? 'primary' : 'ghost'), onclick: () => setFeedback('up') }, 'About right'),
+          h('button', { class: 'btn small ' + (sc.feedback === 'high' ? 'primary' : 'ghost'), onclick: () => setFeedback('high') }, 'Too high')),
+        h('div', { class: 'row between mt-12' },
+          h('span', { class: 'small' }, 'Your own score for this photo'),
+          h('div', { style: { width: '92px' } }, yours)));
+    }
+
+    return h('div', { id: 'feedback-card' }, feedbackInner(scan));
   }
 
   function aiCard(scan) {
@@ -3000,6 +3127,18 @@
         })),
       h('p', { class: 'helper rise', style: { '--i': 7.7 } },
         'Off by default. While it is on, each new scan sends one photo to Google. Everything else \u2014 scores, quests, history \u2014 still never leaves this device.'),
+
+      /* calibration */
+      h('p', { class: 'sect rise', style: { '--i': 8.0 } }, 'Calibration'),
+      h('div', { class: 'group rise', style: { '--i': 8.1 } },
+        h('button', { class: 'item', style: { width: '100%', textAlign: 'left' }, onclick: downloadCalibration },
+          h('span', { class: 'ico', html: I.download, style: { display: 'grid' } }),
+          h('div', { class: 'txt' },
+            h('div', { class: 't' }, 'Export measurements'),
+            h('div', { class: 's' }, calibrationRows().length + ' scans with raw numbers')),
+          h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }))),
+      h('p', { class: 'helper rise', style: { '--i': 8.2 } },
+        'Every scan keeps its 22 measurements. Export them as CSV to check the scoring against real faces. Nothing is uploaded.'),
 
       /* scores & legal */
       h('p', { class: 'sect rise', style: { '--i': 8 } }, T('Scores & legal')),
