@@ -19,6 +19,9 @@
   const sheetEl = $('#sheet');
 
   /* ---------------- mini hyperscript ---------------- */
+  const NOTHING = document.createElement('span');
+  NOTHING.className = 'hide';
+
   function h(tag, props, ...kids) {
     const el = document.createElement(tag);
     props = props || {};
@@ -1392,7 +1395,7 @@
       fileInput,
       (() => {
         const st = scanState();
-        if (!st.credits) return h('span', { class: 'hide' });
+        if (!st.credits) return NOTHING;
         return h('p', { class: 'tiny center mt-12 rise', style: { '--i': 4 } },
           st.credits + ' bonus scan' + (st.credits > 1 ? 's' : '') + ' left from codes');
       })(),
@@ -1913,7 +1916,7 @@
           h('span', { class: 'display sm mono' }, num(scan.side.jawline, 1, '\u00b0'))),
         h('div', { class: 'row between mt-8' },
           h('span', { class: 'small' }, 'Chin projection'),
-          h('span', { class: 'display sm mono' }, num(scan.side.projection, 1, '\u00b0')))) : null,
+          h('span', { class: 'display sm mono' }, num(scan.side.projection, 1, '\u00b0')))) : NOTHING,
 
       h('div', { class: 'mt-20 rise', style: { '--i': 3 } },
         h('h2', { class: 'display sm', style: { marginBottom: '10px' } }, T('Where to focus')),
