@@ -116,7 +116,7 @@
 
   function calibrationRows() {
     return (S.scans || []).filter((s) => s.metrics).map((s) => {
-      const when = s.at ? new Date(s.at) : null;
+      const when = s.ts ? new Date(s.ts) : null;
       const row = {
         id: s.id,
         date: when && !isNaN(when.getTime()) ? when.toISOString() : '',
@@ -228,7 +228,46 @@
     } catch (e) { /* private mode: run in memory */ }
   }
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* quota */ }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(S));
+    } catch (e) {
+      // storage is full: shed the oldest thumbnails and try once more, then drop
+      // whole scans. Losing an old picture beats losing the write.
+      let ok = false;
+      const scans = S.scans.slice();
+      for (let pass = 0; pass < 2 && !ok; pass++) {
+        for (let i = 0; i < S.scans.length && !ok; i++) {
+          if (S.scans[i].thumb) {
+            delete S.scans[i].thumb;
+            try { localStorage.setItem(KEY, JSON.stringify(S)); ok = true; } catch (e2) { /* keep going */ }
+          }
+        }
+        if (!ok && S.scans.length > 6) {
+          S.scans = S.scans.slice(-Math.floor(S.scans.length * 0.7));
+          try { localStorage.setItem(KEY, JSON.stringify(S)); ok = true; } catch (e2) { /* keep going */ }
+        }
+      }
+      if (!ok) S.scans = scans;
+      if (ok) toast('Storage was full \u2014 old photos trimmed to keep your scores');
+    }
+  }
+
+  /* ask the browser not to evict us; ignored where unsupported */
+  function requestPersistent() {
+    try {
+      if (navigator.storage && navigator.storage.persist && !S._persistAsked) {
+        S._persistAsked = true;
+        navigator.storage.persist().then((granted) => {
+          if (granted) { S._persisted = true; save(); }
+        }).catch(() => {});
+      }
+    } catch (e) { /* older browser */ }
+  }
+
+  function isInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      navigator.standalone === true;
   }
   const todayKey = (d) => {
     const x = d ? new Date(d) : new Date();
@@ -942,6 +981,56 @@
   }
 
   /* ---------- home ---------- */
+  let deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstall = e;
+  });
+
+  function homeNudges() {
+    const out = [];
+    const days = (ms) => Math.floor(ms / 86400000);
+
+    // a backup is the only copy that survives a wiped browser
+    if (S.scans.length >= 3 && !isInstalled()) {
+      const since = S.lastBackupAt ? days(Date.now() - S.lastBackupAt) : days(Date.now() - (S.created || Date.now()));
+      if (since >= 7) {
+        out.push(h('div', { class: 'card mt-16 rise', style: { '--i': 2.2 } },
+          h('div', { class: 'row between' },
+            h('div', {},
+              h('p', { class: 'eyebrow' }, 'Keep a copy'),
+              h('div', { class: 'display sm', style: { marginTop: '4px' } }, 'Back up your scans')),
+            h('span', { class: 'pill plain' }, since + 'd')),
+          h('p', { class: 'small mt-8' }, 'Browsers delete local data when a site is left alone for a week. A backup file is the only copy that survives that.'),
+          h('div', { class: 'row gap-8 mt-12' },
+            h('button', { class: 'btn small primary', onclick: exportJson }, 'Save a backup'),
+            h('button', { class: 'btn small ghost', onclick: () => go('settings') }, 'Restore'))));
+      }
+    }
+
+    // invite the install once there is something worth installing
+    if (deferredInstall && !isInstalled() && !S.installDismissed && S.scans.length >= 2) {
+      out.push(h('div', { class: 'card mt-16 rise', style: { '--i': 2.4 } },
+        h('div', { class: 'row between' },
+          h('div', {},
+            h('p', { class: 'eyebrow' }, 'Home screen'),
+            h('div', { class: 'display sm', style: { marginTop: '4px' } }, 'Keep Lumorph on your phone')),
+          h('span', { class: 'pill gold' }, 'App')),
+        h('p', { class: 'small mt-8' }, 'Installed apps are exempt from the browser clearing your data, and it opens without the address bar.'),
+        h('div', { class: 'row gap-8 mt-12' },
+          h('button', { class: 'btn small primary', onclick: async () => {
+            if (!deferredInstall) return;
+            deferredInstall.prompt();
+            try { await deferredInstall.userChoice; } catch (e) { /* dismissed */ }
+            deferredInstall = null;
+            save();
+            go('home');
+          } }, 'Add to home screen'),
+          h('button', { class: 'btn small ghost', onclick: () => { S.installDismissed = true; save(); go('home'); } }, 'Not now'))));
+    }
+    return out;
+  }
+
   ROUTES.home = function (root) {
     if (!S.onboarded) return go('onboarding');
     const scan = lastScan();
@@ -1047,7 +1136,8 @@
           h('div', { class: 'display sm mono' }, h('span', { class: 'xp-total' }, String(S.xp)), ' XP')),
 
       h('p', { class: 'tiny center mt-20 rise', style: { '--i': 7 } },
-        'Appearance guidance only. Not medical advice, and never a diagnosis.'))
+        'Appearance guidance only. Not medical advice, and never a diagnosis.'),
+      ...homeNudges())
     );
   };
 
@@ -1064,6 +1154,22 @@
   function planLine() {
     const c = S.profile.concerns.map((id) => (CONCERNS.find((s) => s.id === id) || {}).t).filter(Boolean);
     return (c[0] || T('General maintenance')) + ' \u00b7 ' + c.length + ' target' + (c.length === 1 ? '' : 's');
+  }
+
+  /* the scans as pictures, not just a line */
+  function photoStrip(scans) {
+    const withThumbs = scans.filter((s) => s.thumb).slice(-14).reverse();
+    if (withThumbs.length < 2) return null;
+    return h('div', { class: 'mt-16 rise', style: { '--i': 1 } },
+      h('div', { class: 'row between', style: { marginBottom: '10px' } },
+        h('p', { class: 'eyebrow' }, 'Your scans'),
+        h('span', { class: 'tiny' }, withThumbs.length + (withThumbs.length === 1 ? ' photo' : ' photos'))),
+      h('div', { class: 'strip' }, withThumbs.map((s) => h('button', {
+        class: 'shot', onclick: () => go('results', { id: s.id })
+      },
+        h('img', { src: s.thumb, alt: 'Scan from ' + new Date(s.ts).toLocaleDateString(), loading: 'lazy' }),
+        h('span', { class: 'when' }, new Date(s.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })),
+        h('span', { class: 'val' }, s.overall.toFixed(1))))));
   }
 
   function questRow(q2, q) {
@@ -1143,6 +1249,7 @@
             (delta >= 0 ? '+' : '') + delta.toFixed(1) + ' since first scan'),
           h('span', { class: 'pill plain' }, scans.length + ' scan' + (scans.length === 1 ? '' : 's'))),
         sparkline(pts),
+        photoStrip(scans),
         h('div', { class: 'row gap-6', style: { flexWrap: 'wrap', marginTop: '6px' } },
           E.PILLARS.filter((p) => p.id !== 'skin' && last.pillars[p.id] != null).map((p) => {
             const d = first.pillars[p.id] != null ? last.pillars[p.id] - first.pillars[p.id] : 0;
@@ -1775,7 +1882,6 @@
         pillars: res.pillars,
         details: res.details,
         focus: res.focus,
-        metrics,
         side,
         metrics: (() => {
           const m = {};
@@ -3167,6 +3273,7 @@
       h('p', { class: 'sect rise', style: { '--i': 14 } }, T('Data & account')),
       h('div', { class: 'group rise', style: { '--i': 15 } },
         growRow({ icon: I.braces, title: T('Export as JSON'), sub: 'Every scan, measurement and quest.', down: true, onClick: exportJson }),
+        growRow({ icon: I.upload, title: 'Restore from a backup', sub: 'Replace everything with a saved file.', onClick: importJson }),
         growRow({ icon: I.table, title: T('Export as spreadsheets'), sub: 'The same data as CSV, one file per table.', down: true, onClick: exportCsv })),
       h('div', { class: 'group rise', style: { '--i': 16, marginTop: '14px' } },
         growRow({ icon: I.trash, title: T('Delete all data'), sub: 'Permanently removes every scan from this device.', danger: true, chev: true, onClick: confirmWipe })),
@@ -3339,8 +3446,51 @@
   }
 
   function exportJson() {
-    downloadFile('lumorph-export-' + todayKey() + '.json', JSON.stringify(S, null, 2), 'application/json');
-    toast('Exported');
+    downloadFile('lumorph-backup-' + todayKey() + '.json', JSON.stringify(S, null, 2), 'application/json');
+    S.lastBackupAt = Date.now();
+    save();
+    toast('Backup saved to your downloads');
+  }
+
+  function importJson() {
+    const input = h('input', { type: 'file', accept: 'application/json,.json', style: { display: 'none' } });
+    input.onchange = () => {
+      const f = input.files && input.files[0];
+      input.remove();
+      if (!f) return;
+      if (f.size > 12 * 1024 * 1024) { toast('That file is too large to be a Lumorph backup'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        let data = null;
+        try { data = JSON.parse(String(reader.result)); } catch (e) { data = null; }
+        if (!data || typeof data !== 'object' || !Array.isArray(data.scans)) {
+          toast('That file is not a Lumorph backup');
+          return;
+        }
+        const n = data.scans.length;
+        const made = data.created ? new Date(data.created) : null;
+        const when = made && !isNaN(made) ? made.toLocaleDateString() : 'an unknown date';
+        openSheet(h('div', {},
+          h('h2', { class: 'display sm' }, 'Restore this backup?'),
+          h('p', { class: 'small mt-8' },
+            n + ' scan' + (n === 1 ? '' : 's') + ', started ' + when + '. This replaces everything currently in the app.'),
+          h('div', { class: 'row gap-8 mt-20' },
+            h('button', { class: 'btn ghost', onclick: () => closeSheet() }, 'Cancel'),
+            h('button', { class: 'btn primary', onclick: () => {
+              const keepTheme = S.theme;
+              S = Object.assign({}, S, data);
+              S.theme = data.theme || keepTheme;
+              S.lastBackupAt = Date.now();
+              save();
+              closeSheet();
+              toast('Restored ' + n + ' scans');
+              setTimeout(() => location.reload(), 700);
+            } }, 'Restore'))));
+      };
+      reader.readAsText(f);
+    };
+    document.body.append(input);
+    input.click();
   }
 
   function exportCsv() {
@@ -3536,6 +3686,8 @@
       setTimeout(() => { if (splash.parentNode) splash.remove(); }, 620);
     }, Math.max(0, MIN - (performance.now() - started)));
   })();
+
+  if (S.onboarded) requestPersistent();
 
   if (S.settings && S.settings.analyticsConsent === true) loadAnalytics();
   setTimeout(analyticsBanner, 1200);

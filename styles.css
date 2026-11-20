@@ -949,6 +949,50 @@ a { color: inherit; }
 }
 .age-note.warn { color: var(--danger); }
 
+/* ---------- photo strip ---------- */
+.strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0 6px;
+  margin: 0 calc(var(--pad) * -1);
+  padding-left: var(--pad);
+  padding-right: var(--pad);
+  scrollbar-width: none;
+}
+.strip::-webkit-scrollbar { display: none; }
+.shot {
+  flex: 0 0 auto;
+  width: 84px;
+  scroll-snap-align: start;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  transition: transform 160ms var(--spring);
+}
+.shot:active { transform: scale(0.95); }
+.shot img {
+  width: 84px;
+  height: 108px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.shot .when { font-size: 10.5px; letter-spacing: 0.04em; }
+.shot .val {
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--gold);
+  line-height: 1;
+}
+
 /* ---------- camera warm-up ---------- */
 .warmup {
   position: absolute;
