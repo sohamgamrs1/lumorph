@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <title>Lumorph — lookmaxxing, free for everyone</title>
 <meta name="description" content="Lumorph scores your face on device, builds a routine around your skin and tracks what actually changes. Free, no subscription, no AI bills." />
+<meta name="color-scheme" content="dark light" />
 <meta name="theme-color" content="#100812" />
 <link rel="canonical" href="https://lumorph.vercel.app/" />
 <meta property="og:type" content="website" />
@@ -40,6 +41,7 @@
    ============================================================ */
 
 :root {
+  color-scheme: dark;
   --ink: #F7EFF3;
   --muted: #A998A4;
   --faint: #8A7C87;
@@ -93,6 +95,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   --ink: #14181C;
   --muted: #5E666E;
   --faint: #676F77;
@@ -983,6 +986,22 @@ a { color: inherit; }
   min-height: 18px;
 }
 .age-note.warn { color: var(--danger); }
+
+/* ---------- icon centring ---------- */
+.icon-btn, .step-dot, .ico, .pill, .xp-chip, .gift-btn, .tabbar button, .scan-fab {
+  display: grid;
+  place-items: center;
+}
+.icon-btn svg, .step-dot svg, .ico svg, .pill svg, .gift-btn svg,
+.tabbar button svg, .scan-fab svg, .btn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  flex: 0 0 auto;
+}
+.step-row { cursor: pointer; }
+.step-row:active { opacity: .75; }
+.gift-btn { margin-right: 2px; }
 
 /* ---------- diagnostics ---------- */
 .diag {
@@ -2959,6 +2978,7 @@ setTimeout(function () {
     clock: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/>'),
     mesh: SVG('<path d="M12 3.2 4.4 7.6v8.8L12 20.8l7.6-4.4V7.6z"/><path d="M12 3.2v17.6"/><path d="M4.4 7.6 12 12l7.6-4.4"/><path d="M4.4 16.4 12 12l7.6 4.4"/>'),
     plus: SVG('<path d="M12 5.2v13.6M5.2 12h13.6"/>'),
+    gift: SVG('<path d="M4.5 11.2h15v8.3a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M3 7.6h18v3.6H3z"/><path d="M12 7.6v13.4"/><path d="M12 7.6S11.1 3 8.6 3a2.3 2.3 0 0 0 0 4.6z"/><path d="M12 7.6S12.9 3 15.4 3a2.3 2.3 0 0 1 0 4.6z"/>'),
     minus: SVG('<path d="M5.2 12h13.6"/>'),
     globe: SVG('<circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8"/><path d="M12 3.6c2.2 2.3 3.3 5.2 3.3 8.4s-1.1 6.1-3.3 8.4c-2.2-2.3-3.3-5.2-3.3-8.4S9.8 5.9 12 3.6z"/>'),
     share: SVG('<circle cx="17.4" cy="5.6" r="2.5"/><circle cx="6.6" cy="12" r="2.5"/><circle cx="17.4" cy="18.4" r="2.5"/><path d="M8.8 10.9 15.2 6.7"/><path d="M8.8 13.1l6.4 4.2"/>'),
@@ -3243,11 +3263,18 @@ setTimeout(function () {
     };
   }
 
-  /* today's list comes from the plan, so it follows what the scan found */
+  /* the short daily list: five habits, the same every day. The routine screen
+     holds the detailed steps; these are the ones you can clear in a minute. */
+  const DAILY = [
+    { id: 'am', label: 'Morning routine', xp: 20, icon: 'drop' },
+    { id: 'pm', label: 'Evening routine', xp: 20, icon: 'moon' },
+    { id: 'sleep', label: 'Sleep 7+ hours', xp: 15, icon: 'moon' },
+    { id: 'water', label: 'Two litres of water', xp: 10, icon: 'water' },
+    { id: 'posture', label: 'Posture check', xp: 10, icon: 'posture' }
+  ];
+
   function todayQuests() {
-    const plan = routinePlan(lastScan());
-    return plan.all.filter((s) => s.xp > 0).slice(0, 6)
-      .map((s) => ({ id: s.id, label: s.title, xp: s.xp, icon: s.icon || 'drop' }));
+    return DAILY;
   }
 
   const WEEKLY = { id: 'rescan', label: T('Weekly re-scan'), xp: 100, icon: 'refresh' };
@@ -3593,6 +3620,8 @@ setTimeout(function () {
         h('div', { class: 'topbar' },
           h('div', { class: 'brandmark' }, h('span', { class: 'orb-dot' }), 'Lumorph'),
           h('div', { class: 'grow' }),
+          h('button', { class: 'icon-btn gift-btn', 'aria-label': 'Redeem a promo code', onclick: redeemPromo },
+            h('span', { html: I.gift, style: { width: '20px', height: '20px', display: 'grid' } })),
           h('button', { class: 'icon-btn', 'aria-label': T('Profile'), onclick: () => go('profile') },
             h('span', { html: I.profile, style: { width: '20px', height: '20px', display: 'grid' } }))
         )
@@ -4442,16 +4471,28 @@ setTimeout(function () {
   const MP_VERSION = '0.10.14';
   const MP_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MP_VERSION;
 
+  async function loadVisionModule() {
+    // one CDN is a single point of failure; try the mirror before giving up
+    const urls = [MP_CDN, 'https://unpkg.com/@mediapipe/tasks-vision@' + MP_VERSION];
+    let lastErr = null;
+    for (const u of urls) {
+      try {
+        const m = await import(u);
+        if (m && typeof m.FilesetResolver === 'function' && typeof m.FaceLandmarker === 'function') {
+          cam.mpBase = u;
+          return m;
+        }
+        lastErr = new Error('package loaded but incomplete');
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('face model package unavailable');
+  }
+
   async function ensureLandmarker() {
     if (cam.lmReady) return cam.lmReady;
     cam.lmReady = (async () => {
-      const vision = await import(MP_CDN);
-      // the package is pinned, but a CDN can still serve something else: check
-      // that the API we depend on is actually there before using it
-      if (!vision || typeof vision.FilesetResolver !== 'function' || typeof vision.FaceLandmarker !== 'function') {
-        throw new Error('face model package ' + MP_VERSION + ' did not load correctly');
-      }
-      const fileset = await vision.FilesetResolver.forVisionTasks(MP_CDN + '/wasm');
+      const vision = await loadVisionModule();
+      const fileset = await vision.FilesetResolver.forVisionTasks((cam.mpBase || MP_CDN) + '/wasm');
       try {
         const tess = vision.FaceLandmarker.FACE_LANDMARKS_TESSELATION;
         if (tess && tess.length) cam.meshLines = tess.map((c) => [c.start, c.end]);
@@ -4464,7 +4505,11 @@ setTimeout(function () {
         runningMode: 'VIDEO',
         numFaces: 1
       });
-    })();
+    })().catch((e) => {
+      cam.lmReady = null;   // a rejection must not be cached forever
+      cam.lmCached = false;
+      throw e;
+    });
     return cam.lmReady;
   }
 
@@ -4505,6 +4550,10 @@ setTimeout(function () {
     const guide = h('div', { class: 'cam-guide', html: guideMarkup(0) });
     const stepPill = h('div', { class: 'cam-step' }, h('span', { class: 'dot' }), '1 of 2 · ' + T('Front'));
     const hint = h('div', { class: 'cam-hint' }, 'Starting camera\u2026');
+    const retryBtn = h('button', {
+      class: 'btn small primary hide', style: { margin: '12px auto 0' },
+      onclick: () => { retryBtn.classList.add('hide'); boot(); }
+    }, 'Retry');
     const flash = h('div', { class: 'cam-flash' });
     const meshCanvas = h('canvas', { class: 'cam-mesh' });
     const meshBtn = h('button', { class: 'cam-toggle', 'aria-pressed': 'true' }, 'Mesh');
@@ -4516,7 +4565,7 @@ setTimeout(function () {
         h('p', { class: 'warm-label' }, 'Getting the camera ready'),
         h('p', { class: 'warm-sub' }, 'The face model is loading once. It is cached after this.')));
 
-    const panel = h('div', { class: 'cam-panel' }, video, meshCanvas, guide, stepPill, hint, flash, meshBtn, warmup);
+    const panel = h('div', { class: 'cam-panel' }, video, meshCanvas, guide, stepPill, hint, retryBtn, flash, meshBtn, warmup);
     const chips = h('div', { class: 'cam-chips' });
     const fileInput = h('input', { type: 'file', accept: 'image/*', class: 'hide' });
 
@@ -4663,7 +4712,7 @@ setTimeout(function () {
           warmNum.textContent = '\u2026';
           lm = await Promise.race([
             ready,
-            new Promise((r) => setTimeout(() => r(null), 25000))
+            new Promise((r) => setTimeout(() => r(null), 45000))
           ]);
           warmup.classList.remove('show');
         } else {
@@ -4671,7 +4720,8 @@ setTimeout(function () {
         }
 
         if (!lm) {
-          hint.textContent = 'The face model could not load \u2014 use Upload instead';
+          hint.textContent = 'The face model did not download.';
+          retryBtn.classList.remove('hide');
           warmup.classList.remove('show');
           return;
         }
@@ -5175,7 +5225,22 @@ setTimeout(function () {
     return cv.toDataURL('image/jpeg', quality || 0.78);
   }
 
+  let aiAbort = null;
+
+  function cancelAiRead(scan) {
+    if (aiAbort) { try { aiAbort.abort(); } catch (e) { /* already gone */ } aiAbort = null; }
+    scan.ai = { status: 'cancelled' };
+    save();
+    refreshAiCard(scan);
+    toast('Read cancelled');
+  }
+
   async function runAiRead(scan, source) {
+    if (aiAbort) { try { aiAbort.abort(); } catch (e) { /* replace the old one */ } }
+    aiAbort = new AbortController();
+    const ctrl = aiAbort;
+    const timer = setTimeout(() => { try { ctrl.abort(); } catch (e) { /* ignore */ } }, 45000);
+
     scan.ai = { status: 'pending' };
     save();
     refreshAiCard(scan);
@@ -5185,8 +5250,10 @@ setTimeout(function () {
       const res = await fetch('/api/rate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image })
+        body: JSON.stringify({ image }),
+        signal: ctrl.signal
       });
+      if (aiAbort !== ctrl) return; // a newer read took over
       let j = {};
       try { j = await res.json(); } catch (e) { j = {}; }
       if (!res.ok) throw new Error(j.message || j.error || 'The read failed');
@@ -5207,9 +5274,21 @@ setTimeout(function () {
       refreshAiCard(scan);
       refreshResults(scan);
     } catch (err) {
+      if (err && err.name === 'AbortError') {
+        // cancelled by the user, or it ran past 45 seconds
+        if (scan.ai && scan.ai.status === 'pending') {
+          scan.ai = { status: 'error', message: 'The read timed out. Google took too long to answer.' };
+          save();
+          refreshAiCard(scan);
+        }
+        return;
+      }
       scan.ai = { status: 'error', message: String((err && err.message) || 'The read failed') };
       save();
       refreshAiCard(scan);
+    } finally {
+      clearTimeout(timer);
+      if (aiAbort === ctrl) aiAbort = null;
     }
   }
 
@@ -5262,7 +5341,15 @@ setTimeout(function () {
         h('div', { class: 'row between' },
           h('div', {}, h('p', { class: 'eyebrow' }, 'Second opinion'), h('div', { class: 'display sm', style: { marginTop: '4px' } }, 'Reading\u2026')),
           h('span', { class: 'ai-badge live' }, 'AI')),
-        h('div', { class: 'ai-skel mt-12' }, h('i', {}), h('i', {}), h('i', {})));
+        h('div', { class: 'ai-skel mt-12' }, h('i', {}), h('i', {}), h('i', {})),
+        h('button', { class: 'btn small ghost mt-12', onclick: () => cancelAiRead(scan) }, 'Cancel'));
+    }
+
+    if (ai.status === 'cancelled') {
+      return h('div', { class: 'ai-card' },
+        h('p', { class: 'eyebrow' }, 'Second opinion'),
+        h('p', { class: 'small mt-8' }, 'Cancelled. Nothing was sent back.'),
+        h('button', { class: 'btn small ghost mt-12', onclick: () => runAiRead(scan, null) }, 'Try again'));
     }
 
     if (ai.status === 'noface') {
@@ -5967,7 +6054,11 @@ setTimeout(function () {
     const done = dayQuests();
     const qDone = todayQuests().filter((q) => done[q.id]).length;
 
-    const stepRow = (s, i, last) => h('div', { class: 'row gap-12', style: { padding: '14px 0', borderTop: i ? '1px solid var(--line)' : 'none' } },
+    const stepRow = (s, i, last) => h('div', {
+      class: 'row gap-12' + (s.xp > 0 ? ' step-row' : ''),
+      style: { padding: '14px 0', borderTop: i ? '1px solid var(--line)' : 'none' },
+      onclick: s.xp > 0 ? (e) => toggleRoutineStep(s, e.currentTarget) : null
+    },
       h('div', { class: 'step-dot' + (s.xp > 0 && done[s.id] ? ' on' : '') },
         s.xp > 0 && done[s.id] ? h('span', { html: I.check, style: { display: 'grid', width: '12px', height: '12px' } }) : null),
       h('div', { class: 'grow' },
@@ -5977,7 +6068,7 @@ setTimeout(function () {
 
     const block = (title, items, i) => items.length ? h('div', { class: 'card mt-16 rise', style: { '--i': i } },
       h('div', { class: 'eyebrow', style: { marginBottom: '6px' } }, title),
-      items.map((s, n) => stepRow(s, n, n === items.length - 1))) : null;
+      items.map((s, n) => stepRow(s, n, n === items.length - 1))) : NOTHING;
 
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
@@ -6018,6 +6109,18 @@ setTimeout(function () {
   };
 
   /* ---------- profile ---------- */
+  function toggleRoutineStep(step, rowEl) {
+    const q = dayQuests();
+    const on = !q[step.id];
+    q[step.id] = on;
+    S.xp = Math.max(0, S.xp + (on ? step.xp : -step.xp));
+    save();
+    haptic(on ? 12 : 8);
+    const dot = rowEl.querySelector('.step-dot');
+    if (dot) dot.classList.toggle('on', on);
+    toast(on ? '+' + step.xp + ' XP' : 'Unmarked');
+  }
+
   ROUTES.calibrate = function (root) {
     const scans = (S.scans || []).filter((s) => s.metrics).slice().reverse();
     const tagged = scans.filter((s) => s.yours != null && s.yours !== '').length;
