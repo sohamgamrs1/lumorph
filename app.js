@@ -1378,7 +1378,7 @@
       drawMesh(ctx, cam.lm, W, H, {
         map: coverMap(vw, vh, W, H),
         lines: cam.meshLines || E.MESH_LINES,
-        stroke: 'rgba(234,213,162,0.45)',
+        stroke: 'rgba(240,161,112,0.45)',
         dot: 'rgba(255,246,223,0.75)',
         dotSize: 1.1 * dpr,
         lineWidth: 0.9 * dpr
@@ -1473,8 +1473,8 @@
       ctx.fillRect(0, 0, W, H);
 
       const glow = ctx.createRadialGradient(W * 0.5, H * 0.34, 10, W * 0.5, H * 0.34, W * 0.62);
-      glow.addColorStop(0, 'rgba(234,213,162,0.16)');
-      glow.addColorStop(1, 'rgba(234,213,162,0)');
+      glow.addColorStop(0, 'rgba(240,161,112,0.16)');
+      glow.addColorStop(1, 'rgba(240,161,112,0)');
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
 
@@ -2070,7 +2070,7 @@
     const mx = (p) => (o.map ? o.map.dx + p.x * o.map.dw : p.x * W);
     const my = (p) => (o.map ? o.map.dy + p.y * o.map.dh : p.y * H);
     ctx.save();
-    ctx.strokeStyle = o.stroke || 'rgba(234,213,162,0.55)';
+    ctx.strokeStyle = o.stroke || 'rgba(240,161,112,0.55)';
     ctx.lineWidth = o.lineWidth || 1;
     ctx.beginPath();
     for (let k = 0; k < lines.length; k++) {
@@ -2128,7 +2128,7 @@
       const finish = (H, img) => {
         cv.width = W; cv.height = H;
         const ctx = cv.getContext('2d');
-        ctx.fillStyle = '#0B0B10';
+        ctx.fillStyle = '#160C19';
         ctx.fillRect(0, 0, W, H);
         if (img) {
           ctx.drawImage(img, 0, 0, W, H);
@@ -2137,7 +2137,7 @@
         }
         drawMesh(ctx, lm, W, H, {
           indices: showIdx, lineWidth: 1.2, dotSize: 1.6,
-          stroke: img ? 'rgba(234,213,162,0.55)' : 'rgba(234,213,162,0.7)'
+          stroke: img ? 'rgba(240,161,112,0.55)' : 'rgba(240,161,112,0.7)'
         });
       };
       if (scan.thumb) {
@@ -2179,7 +2179,7 @@
   }
 
   function paintBackground(ctx, W, H) {
-    ctx.fillStyle = '#07070A';
+    ctx.fillStyle = '#100812';
     ctx.fillRect(0, 0, W, H);
 
     let g = ctx.createRadialGradient(W * 0.22, H * 0.06, 0, W * 0.22, H * 0.06, W * 0.95);
@@ -2196,20 +2196,20 @@
     ctx.fillRect(0, 0, W, H);
 
     g = ctx.createRadialGradient(W * 0.5, H * 1.02, 0, W * 0.5, H * 1.02, W * 0.9);
-    g.addColorStop(0, 'rgba(234,213,162,0.16)');
-    g.addColorStop(1, 'rgba(234,213,162,0)');
+    g.addColorStop(0, 'rgba(240,161,112,0.16)');
+    g.addColorStop(1, 'rgba(240,161,112,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
 
   function drawOrb(ctx, x, y, r) {
     const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r);
-    g.addColorStop(0, '#FFFBEF');
-    g.addColorStop(0.42, '#EAD5A2');
-    g.addColorStop(0.78, '#C6A167');
-    g.addColorStop(1, '#7A5C28');
+    g.addColorStop(0, '#FFF1E6');
+    g.addColorStop(0.42, '#F0A170');
+    g.addColorStop(0.78, '#C97B4E');
+    g.addColorStop(1, '#8A4F2E');
     ctx.save();
-    ctx.shadowColor = 'rgba(234,213,162,0.45)';
+    ctx.shadowColor = 'rgba(240,161,112,0.45)';
     ctx.shadowBlur = r * 2.2;
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -2251,13 +2251,13 @@
 
     // brand
     drawOrb(ctx, pad + 16, pad + 16, 15);
-    ctx.fillStyle = '#F6F1E7';
+    ctx.fillStyle = '#F7EFF3';
     ctx.font = '400 40px ' + SERIF;
     ctx.textBaseline = 'middle';
     ctx.fillText('Lumorph', pad + 46, pad + 18);
 
     // date
-    ctx.fillStyle = 'rgba(155,150,140,0.95)';
+    ctx.fillStyle = 'rgba(169,152,164,0.95)';
     ctx.font = '500 22px ' + SANS;
     ctx.textAlign = 'right';
     ctx.fillText(new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), W - pad, pad + 18);
@@ -2266,8 +2266,8 @@
     // score
     const grad = ctx.createLinearGradient(0, 240, W * 0.7, 620);
     grad.addColorStop(0, '#FFF6DF');
-    grad.addColorStop(0.5, '#EAD5A2');
-    grad.addColorStop(1, '#C6A167');
+    grad.addColorStop(0.5, '#F0A170');
+    grad.addColorStop(1, '#C97B4E');
 
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = grad;
@@ -2280,16 +2280,16 @@
     const scoreW = ctx.measureText(scoreTxt).width;
     const tx = pad + scoreW + 30;
 
-    ctx.fillStyle = 'rgba(155,150,140,0.9)';
+    ctx.fillStyle = 'rgba(169,152,164,0.9)';
     ctx.font = '500 26px ' + SANS;
     ctx.fillText('out of 10', tx, 468);
 
-    ctx.fillStyle = '#F6F1E7';
+    ctx.fillStyle = '#F7EFF3';
     ctx.font = '400 60px ' + SERIF;
     ctx.fillText(scoreWordFor(scan.overall), tx, 560);
 
     const tier = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
-    ctx.fillStyle = 'rgba(234,213,162,0.95)';
+    ctx.fillStyle = 'rgba(240,161,112,0.95)';
     ctx.font = '400 34px ' + SERIF;
     ctx.fillText(tier.label, tx, 618);
 
@@ -2315,14 +2315,14 @@
       ctx.fill();
 
       const g2 = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-      g2.addColorStop(0, '#8C6B33');
-      g2.addColorStop(0.55, '#EAD5A2');
+      g2.addColorStop(0, '#8A4F2E');
+      g2.addColorStop(0.55, '#F0A170');
       g2.addColorStop(1, '#FFF3D6');
       ctx.fillStyle = g2;
       roundRect(ctx, barX, y - 6, Math.max(12, barW * (v / 10)), 12, 6);
       ctx.fill();
 
-      ctx.fillStyle = '#EAD5A2';
+      ctx.fillStyle = '#F0A170';
       ctx.font = '400 30px ' + SERIF;
       ctx.textAlign = 'right';
       ctx.fillText(v.toFixed(1), W - pad, y + 10);
@@ -2333,10 +2333,10 @@
     // streak strip
     const st = streak();
     if (st > 0) {
-      ctx.fillStyle = 'rgba(234,213,162,0.12)';
+      ctx.fillStyle = 'rgba(240,161,112,0.12)';
       roundRect(ctx, pad, H - 220, 300, 62, 31);
       ctx.fill();
-      ctx.fillStyle = '#EAD5A2';
+      ctx.fillStyle = '#F0A170';
       ctx.font = '600 26px ' + SANS;
       ctx.fillText(st + (st === 1 ? ' day streak' : ' day streak'), pad + 28, H - 180);
     }
@@ -2344,7 +2344,7 @@
     // footer
     ctx.fillStyle = 'rgba(255,255,255,0.10)';
     ctx.fillRect(pad, H - 118, W - pad * 2, 1);
-    ctx.fillStyle = 'rgba(155,150,140,0.85)';
+    ctx.fillStyle = 'rgba(169,152,164,0.85)';
     ctx.font = '500 22px ' + SANS;
     ctx.fillText('lumorph.vercel.app', pad, H - 66);
     ctx.textAlign = 'right';
@@ -2402,10 +2402,10 @@
       const lm = E.decodeLandmarks(scan.lm);
       if (lm && pts.length) {
         const p = pts.map((i) => ({ x: lm[i].x * W, y: lm[i].y * H }));
-        ctx.strokeStyle = 'rgba(234,213,162,0.95)';
+        ctx.strokeStyle = 'rgba(240,161,112,0.95)';
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
-        ctx.shadowColor = 'rgba(234,213,162,0.8)';
+        ctx.shadowColor = 'rgba(240,161,112,0.8)';
         ctx.shadowBlur = 12;
         if (p.length > 1) {
           ctx.beginPath();
@@ -2431,7 +2431,7 @@
     } else {
       cv.width = 700; cv.height = 500;
       const c0 = cv.getContext('2d');
-      c0.fillStyle = '#0B0B10'; c0.fillRect(0, 0, 700, 500);
+      c0.fillStyle = '#160C19'; c0.fillRect(0, 0, 700, 500);
       c0.fillStyle = 'rgba(246,241,231,0.55)';
       c0.font = '500 22px ' + SANS;
       c0.textAlign = 'center';
@@ -2541,13 +2541,13 @@
     const pad = 90;
     // header band
     const g = ctx.createLinearGradient(0, 0, W, 0);
-    g.addColorStop(0, '#0B0B10');
+    g.addColorStop(0, '#160C19');
     g.addColorStop(1, '#171410');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, 300);
 
     drawOrb(ctx, pad + 18, 118, 16);
-    ctx.fillStyle = '#F6F1E7';
+    ctx.fillStyle = '#F7EFF3';
     ctx.font = '400 44px ' + SERIF;
     ctx.textBaseline = 'middle';
     ctx.fillText('Lumorph', pad + 50, 120);
@@ -3296,7 +3296,7 @@
       : S.theme;
     document.documentElement.setAttribute('data-theme', t);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'light' ? '#F6F3EC' : '#07070A');
+    if (meta) meta.setAttribute('content', t === 'light' ? '#F6F3EC' : '#100812');
   }
 
   if (window.matchMedia) {

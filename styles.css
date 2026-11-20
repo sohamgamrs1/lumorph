@@ -5,20 +5,20 @@
    ============================================================ */
 
 :root {
-  --ink: #F6F1E7;
-  --muted: #9B968C;
-  --faint: #6C6862;
-  --bg: #07070A;
-  --bg-2: #0B0B10;
+  --ink: #F7EFF3;
+  --muted: #A998A4;
+  --faint: #7A6B77;
+  --bg: #100812;
+  --bg-2: #160C19;
   --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.075);
-  --line: rgba(255, 255, 255, 0.085);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  --gold: #EAD5A2;
-  --gold-2: #C6A167;
-  --gold-3: #8C6B33;
-  --gold-soft: rgba(234, 213, 162, 0.13);
-  --danger: #E4796E;
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.17);
+  --gold: #F0A170;
+  --gold-2: #C97B4E;
+  --gold-3: #8A4F2E;
+  --gold-soft: rgba(240, 161, 112, 0.16);
+  --danger: #E8796E;
   --good: #8FCBA4;
 
   --r-sm: 12px;
@@ -37,17 +37,17 @@
   --pad: 22px;
   --tabbar: 74px;
 
-  --serif: "Instrument Serif", "Fraunces", Georgia, "Times New Roman", serif;
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* theme-aware pieces */
-  --accent-solid: linear-gradient(180deg, #FFF6E2, var(--gold) 55%, var(--gold-2));
-  --on-accent: #171308;
-  --bar-grad: linear-gradient(90deg, var(--gold-3), var(--gold), #FFF3D6);
+  --accent-solid: linear-gradient(180deg, #FFD9BE, var(--gold) 55%, var(--gold-2));
+  --on-accent: #2A1206;
+  --bar-grad: linear-gradient(90deg, var(--gold-3), var(--gold), #FFD9BE);
   --thumb-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
-  --heat-1: rgba(234, 213, 162, 0.22);
-  --heat-2: rgba(234, 213, 162, 0.45);
-  --heat-3: rgba(234, 213, 162, 0.72);
+  --heat-1: rgba(240, 161, 112, 0.22);
+  --heat-2: rgba(240, 161, 112, 0.45);
+  --heat-3: rgba(240, 161, 112, 0.72);
   --heat-4: var(--gold);
   --heat-frozen: rgba(122, 132, 160, 0.20);
   --grain-opacity: 0.05;
@@ -55,33 +55,35 @@
 }
 
 [data-theme="light"] {
-  --ink: #1A1815;
-  --muted: #6B655C;
-  --faint: #918A80;
-  --bg: #F7F4ED;
+  --ink: #14181C;
+  --muted: #5E666E;
+  --faint: #8A929A;
+  --bg: #F4F2ED;
   --bg-2: #FFFFFF;
-  --surface: rgba(26, 24, 21, 0.045);
-  --surface-2: rgba(26, 24, 21, 0.075);
-  --line: rgba(26, 24, 21, 0.10);
-  --line-strong: rgba(26, 24, 21, 0.22);
-  --gold: #8C6A2A;
-  --gold-2: #A98338;
-  --gold-3: #C9A961;
-  --gold-soft: rgba(140, 106, 42, 0.10);
+  --surface: rgba(20, 24, 28, 0.035);
+  --surface-2: rgba(20, 24, 28, 0.06);
+  --line: rgba(20, 24, 28, 0.10);
+  --line-strong: rgba(20, 24, 28, 0.20);
+  --gold: #2F6B57;
+  --gold-2: #1F4F40;
+  --gold-3: #123027;
+  --gold-soft: rgba(47, 107, 87, 0.13);
   --danger: #B3402F;
   --good: #2F7A4F;
 
-  --accent-solid: linear-gradient(180deg, #A98338, #8C6A2A);
-  --on-accent: #FFFCF4;
-  --bar-grad: linear-gradient(90deg, #D9BC7E, #A98338);
-  --thumb-bg: linear-gradient(180deg, #FFFFFF, #F2EDE2);
-  --heat-1: rgba(140, 106, 42, 0.16);
-  --heat-2: rgba(140, 106, 42, 0.34);
-  --heat-3: rgba(140, 106, 42, 0.56);
-  --heat-4: #8C6A2A;
+  --serif: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --accent-solid: linear-gradient(180deg, #4A8C74, #2F6B57 55%, #1F4F40);
+  --on-accent: #FFFFFF;
+  --bar-grad: linear-gradient(90deg, #7FB39F, #2F6B57);
+  --thumb-bg: linear-gradient(180deg, #FFFFFF, #EFEDE6);
+  --heat-1: rgba(47, 107, 87, 0.14);
+  --heat-2: rgba(47, 107, 87, 0.30);
+  --heat-3: rgba(47, 107, 87, 0.52);
+  --heat-4: #2F6B57;
   --heat-frozen: rgba(110, 120, 150, 0.14);
-  --grain-opacity: 0.025;
-  --aurora-opacity: 0.6;
+  --grain-opacity: 0.02;
+  --aurora-opacity: 0.45;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -815,7 +817,7 @@ a { color: inherit; }
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
-  color: #F6F1E7;
+  color: var(--ink);
 }
 .cam-step .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
 .cam-hint {
@@ -1359,7 +1361,7 @@ a { color: inherit; }
 #splash {
   position: fixed; inset: 0; z-index: 300;
   display: grid; place-items: center;
-  background: #07070A;
+  background: var(--bg);
   opacity: 1;
   transition: opacity 520ms var(--ease), visibility 520ms;
   /* if the script never runs, the splash still gets out of the way */
@@ -1380,7 +1382,7 @@ a { color: inherit; }
 .splash-orb {
   position: relative;
   width: 92px; height: 92px; border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #FFFBEF, #EAD5A2 42%, #C6A167 78%, #7A5C28);
+  background: radial-gradient(circle at 34% 28%, #FFF1E6, var(--gold) 42%, var(--gold-2) 78%, var(--gold-3));
   box-shadow: 0 0 90px rgba(234, 213, 162, 0.35);
   animation: orbPulse 3.2s var(--ease) infinite;
 }
@@ -1412,7 +1414,7 @@ a { color: inherit; }
 .splash-bar i {
   display: block; height: 100%; width: 40%;
   border-radius: 99px;
-  background: linear-gradient(90deg, transparent, #EAD5A2, transparent);
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
   animation: splashSweep 1.25s var(--ease) infinite;
 }
 @keyframes splashSweep {
@@ -1522,7 +1524,7 @@ a { color: inherit; }
   top: 3px; left: 3px;
   width: 20px; height: 20px;
   border-radius: 50%;
-  background: #F6F1E7;
+  background: var(--ink);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: transform var(--t-mid) var(--spring);
   will-change: transform;

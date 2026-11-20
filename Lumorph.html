@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <title>Lumorph — lookmaxxing, free for everyone</title>
 <meta name="description" content="Lumorph scores your face on device, builds a routine around your skin and tracks what actually changes. Free, no subscription, no AI bills." />
-<meta name="theme-color" content="#07070A" />
+<meta name="theme-color" content="#100812" />
 <link rel="canonical" href="https://lumorph.vercel.app/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Lumorph" />
@@ -31,7 +31,7 @@
 <meta name="apple-mobile-web-app-title" content="Lumorph" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Manrope:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
 /* ============================================================
    Lumorph — design system
@@ -40,20 +40,20 @@
    ============================================================ */
 
 :root {
-  --ink: #F6F1E7;
-  --muted: #9B968C;
-  --faint: #6C6862;
-  --bg: #07070A;
-  --bg-2: #0B0B10;
+  --ink: #F7EFF3;
+  --muted: #A998A4;
+  --faint: #7A6B77;
+  --bg: #100812;
+  --bg-2: #160C19;
   --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.075);
-  --line: rgba(255, 255, 255, 0.085);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  --gold: #EAD5A2;
-  --gold-2: #C6A167;
-  --gold-3: #8C6B33;
-  --gold-soft: rgba(234, 213, 162, 0.13);
-  --danger: #E4796E;
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.17);
+  --gold: #F0A170;
+  --gold-2: #C97B4E;
+  --gold-3: #8A4F2E;
+  --gold-soft: rgba(240, 161, 112, 0.16);
+  --danger: #E8796E;
   --good: #8FCBA4;
 
   --r-sm: 12px;
@@ -72,17 +72,17 @@
   --pad: 22px;
   --tabbar: 74px;
 
-  --serif: "Instrument Serif", "Fraunces", Georgia, "Times New Roman", serif;
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* theme-aware pieces */
-  --accent-solid: linear-gradient(180deg, #FFF6E2, var(--gold) 55%, var(--gold-2));
-  --on-accent: #171308;
-  --bar-grad: linear-gradient(90deg, var(--gold-3), var(--gold), #FFF3D6);
+  --accent-solid: linear-gradient(180deg, #FFD9BE, var(--gold) 55%, var(--gold-2));
+  --on-accent: #2A1206;
+  --bar-grad: linear-gradient(90deg, var(--gold-3), var(--gold), #FFD9BE);
   --thumb-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
-  --heat-1: rgba(234, 213, 162, 0.22);
-  --heat-2: rgba(234, 213, 162, 0.45);
-  --heat-3: rgba(234, 213, 162, 0.72);
+  --heat-1: rgba(240, 161, 112, 0.22);
+  --heat-2: rgba(240, 161, 112, 0.45);
+  --heat-3: rgba(240, 161, 112, 0.72);
   --heat-4: var(--gold);
   --heat-frozen: rgba(122, 132, 160, 0.20);
   --grain-opacity: 0.05;
@@ -90,33 +90,35 @@
 }
 
 [data-theme="light"] {
-  --ink: #1A1815;
-  --muted: #6B655C;
-  --faint: #918A80;
-  --bg: #F7F4ED;
+  --ink: #14181C;
+  --muted: #5E666E;
+  --faint: #8A929A;
+  --bg: #F4F2ED;
   --bg-2: #FFFFFF;
-  --surface: rgba(26, 24, 21, 0.045);
-  --surface-2: rgba(26, 24, 21, 0.075);
-  --line: rgba(26, 24, 21, 0.10);
-  --line-strong: rgba(26, 24, 21, 0.22);
-  --gold: #8C6A2A;
-  --gold-2: #A98338;
-  --gold-3: #C9A961;
-  --gold-soft: rgba(140, 106, 42, 0.10);
+  --surface: rgba(20, 24, 28, 0.035);
+  --surface-2: rgba(20, 24, 28, 0.06);
+  --line: rgba(20, 24, 28, 0.10);
+  --line-strong: rgba(20, 24, 28, 0.20);
+  --gold: #2F6B57;
+  --gold-2: #1F4F40;
+  --gold-3: #123027;
+  --gold-soft: rgba(47, 107, 87, 0.13);
   --danger: #B3402F;
   --good: #2F7A4F;
 
-  --accent-solid: linear-gradient(180deg, #A98338, #8C6A2A);
-  --on-accent: #FFFCF4;
-  --bar-grad: linear-gradient(90deg, #D9BC7E, #A98338);
-  --thumb-bg: linear-gradient(180deg, #FFFFFF, #F2EDE2);
-  --heat-1: rgba(140, 106, 42, 0.16);
-  --heat-2: rgba(140, 106, 42, 0.34);
-  --heat-3: rgba(140, 106, 42, 0.56);
-  --heat-4: #8C6A2A;
+  --serif: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --accent-solid: linear-gradient(180deg, #4A8C74, #2F6B57 55%, #1F4F40);
+  --on-accent: #FFFFFF;
+  --bar-grad: linear-gradient(90deg, #7FB39F, #2F6B57);
+  --thumb-bg: linear-gradient(180deg, #FFFFFF, #EFEDE6);
+  --heat-1: rgba(47, 107, 87, 0.14);
+  --heat-2: rgba(47, 107, 87, 0.30);
+  --heat-3: rgba(47, 107, 87, 0.52);
+  --heat-4: #2F6B57;
   --heat-frozen: rgba(110, 120, 150, 0.14);
-  --grain-opacity: 0.025;
-  --aurora-opacity: 0.6;
+  --grain-opacity: 0.02;
+  --aurora-opacity: 0.45;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -850,7 +852,7 @@ a { color: inherit; }
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
-  color: #F6F1E7;
+  color: var(--ink);
 }
 .cam-step .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
 .cam-hint {
@@ -1394,7 +1396,7 @@ a { color: inherit; }
 #splash {
   position: fixed; inset: 0; z-index: 300;
   display: grid; place-items: center;
-  background: #07070A;
+  background: var(--bg);
   opacity: 1;
   transition: opacity 520ms var(--ease), visibility 520ms;
   /* if the script never runs, the splash still gets out of the way */
@@ -1415,7 +1417,7 @@ a { color: inherit; }
 .splash-orb {
   position: relative;
   width: 92px; height: 92px; border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #FFFBEF, #EAD5A2 42%, #C6A167 78%, #7A5C28);
+  background: radial-gradient(circle at 34% 28%, #FFF1E6, var(--gold) 42%, var(--gold-2) 78%, var(--gold-3));
   box-shadow: 0 0 90px rgba(234, 213, 162, 0.35);
   animation: orbPulse 3.2s var(--ease) infinite;
 }
@@ -1447,7 +1449,7 @@ a { color: inherit; }
 .splash-bar i {
   display: block; height: 100%; width: 40%;
   border-radius: 99px;
-  background: linear-gradient(90deg, transparent, #EAD5A2, transparent);
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
   animation: splashSweep 1.25s var(--ease) infinite;
 }
 @keyframes splashSweep {
@@ -1557,7 +1559,7 @@ a { color: inherit; }
   top: 3px; left: 3px;
   width: 20px; height: 20px;
   border-radius: 50%;
-  background: #F6F1E7;
+  background: var(--ink);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: transform var(--t-mid) var(--spring);
   will-change: transform;
@@ -1622,10 +1624,10 @@ setTimeout(function () {
 }, 3000);
 
 </script>
-  <div id="boot-error" style="display:none;position:fixed;inset:0;z-index:999;background:#07070A;color:#F6F1E7;font:14px/1.5 -apple-system,system-ui,sans-serif;padding:28px;">
+  <div id="boot-error" style="display:none;position:fixed;inset:0;z-index:999;background:#100812;color:#F7EFF3;font:14px/1.5 -apple-system,system-ui,sans-serif;padding:28px;">
     <div style="max-width:420px;margin:12vh auto 0;">
       <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9B968C;margin-bottom:10px;">Lumorph could not start</div>
-      <div class="msg" style="color:#EAD5A2;margin-bottom:18px;"></div>
+      <div class="msg" style="color:#F0A170;margin-bottom:18px;"></div>
       <div style="color:#9B968C;font-size:13px;">Try the single-file build, or serve the folder over http (python3 -m http.server 8080).</div>
     </div>
   </div>
@@ -1651,18 +1653,18 @@ setTimeout(function () {
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
       <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#FFF4D9" />
-        <stop offset="55%" stop-color="#EAD5A2" />
-        <stop offset="100%" stop-color="#C6A167" />
+        <stop offset="0%" stop-color="#FFD9BE" />
+        <stop offset="55%" stop-color="#F0A170" />
+        <stop offset="100%" stop-color="#C97B4E" />
       </linearGradient>
       <linearGradient id="goldGradLight" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#C9A961" />
-        <stop offset="60%" stop-color="#A98338" />
-        <stop offset="100%" stop-color="#7E5F24" />
+        <stop offset="0%" stop-color="#7FB39F" />
+        <stop offset="60%" stop-color="#2F6B57" />
+        <stop offset="100%" stop-color="#123027" />
       </linearGradient>
       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="rgba(234,213,162,0.30)" />
-        <stop offset="100%" stop-color="rgba(234,213,162,0)" />
+        <stop offset="0%" stop-color="rgba(240,161,112,0.30)" />
+        <stop offset="100%" stop-color="rgba(240,161,112,0)" />
       </linearGradient>
     </defs>
   </svg>
@@ -4080,7 +4082,7 @@ setTimeout(function () {
       drawMesh(ctx, cam.lm, W, H, {
         map: coverMap(vw, vh, W, H),
         lines: cam.meshLines || E.MESH_LINES,
-        stroke: 'rgba(234,213,162,0.45)',
+        stroke: 'rgba(240,161,112,0.45)',
         dot: 'rgba(255,246,223,0.75)',
         dotSize: 1.1 * dpr,
         lineWidth: 0.9 * dpr
@@ -4175,8 +4177,8 @@ setTimeout(function () {
       ctx.fillRect(0, 0, W, H);
 
       const glow = ctx.createRadialGradient(W * 0.5, H * 0.34, 10, W * 0.5, H * 0.34, W * 0.62);
-      glow.addColorStop(0, 'rgba(234,213,162,0.16)');
-      glow.addColorStop(1, 'rgba(234,213,162,0)');
+      glow.addColorStop(0, 'rgba(240,161,112,0.16)');
+      glow.addColorStop(1, 'rgba(240,161,112,0)');
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
 
@@ -4772,7 +4774,7 @@ setTimeout(function () {
     const mx = (p) => (o.map ? o.map.dx + p.x * o.map.dw : p.x * W);
     const my = (p) => (o.map ? o.map.dy + p.y * o.map.dh : p.y * H);
     ctx.save();
-    ctx.strokeStyle = o.stroke || 'rgba(234,213,162,0.55)';
+    ctx.strokeStyle = o.stroke || 'rgba(240,161,112,0.55)';
     ctx.lineWidth = o.lineWidth || 1;
     ctx.beginPath();
     for (let k = 0; k < lines.length; k++) {
@@ -4830,7 +4832,7 @@ setTimeout(function () {
       const finish = (H, img) => {
         cv.width = W; cv.height = H;
         const ctx = cv.getContext('2d');
-        ctx.fillStyle = '#0B0B10';
+        ctx.fillStyle = '#160C19';
         ctx.fillRect(0, 0, W, H);
         if (img) {
           ctx.drawImage(img, 0, 0, W, H);
@@ -4839,7 +4841,7 @@ setTimeout(function () {
         }
         drawMesh(ctx, lm, W, H, {
           indices: showIdx, lineWidth: 1.2, dotSize: 1.6,
-          stroke: img ? 'rgba(234,213,162,0.55)' : 'rgba(234,213,162,0.7)'
+          stroke: img ? 'rgba(240,161,112,0.55)' : 'rgba(240,161,112,0.7)'
         });
       };
       if (scan.thumb) {
@@ -4881,7 +4883,7 @@ setTimeout(function () {
   }
 
   function paintBackground(ctx, W, H) {
-    ctx.fillStyle = '#07070A';
+    ctx.fillStyle = '#100812';
     ctx.fillRect(0, 0, W, H);
 
     let g = ctx.createRadialGradient(W * 0.22, H * 0.06, 0, W * 0.22, H * 0.06, W * 0.95);
@@ -4898,20 +4900,20 @@ setTimeout(function () {
     ctx.fillRect(0, 0, W, H);
 
     g = ctx.createRadialGradient(W * 0.5, H * 1.02, 0, W * 0.5, H * 1.02, W * 0.9);
-    g.addColorStop(0, 'rgba(234,213,162,0.16)');
-    g.addColorStop(1, 'rgba(234,213,162,0)');
+    g.addColorStop(0, 'rgba(240,161,112,0.16)');
+    g.addColorStop(1, 'rgba(240,161,112,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
 
   function drawOrb(ctx, x, y, r) {
     const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r);
-    g.addColorStop(0, '#FFFBEF');
-    g.addColorStop(0.42, '#EAD5A2');
-    g.addColorStop(0.78, '#C6A167');
-    g.addColorStop(1, '#7A5C28');
+    g.addColorStop(0, '#FFF1E6');
+    g.addColorStop(0.42, '#F0A170');
+    g.addColorStop(0.78, '#C97B4E');
+    g.addColorStop(1, '#8A4F2E');
     ctx.save();
-    ctx.shadowColor = 'rgba(234,213,162,0.45)';
+    ctx.shadowColor = 'rgba(240,161,112,0.45)';
     ctx.shadowBlur = r * 2.2;
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -4953,13 +4955,13 @@ setTimeout(function () {
 
     // brand
     drawOrb(ctx, pad + 16, pad + 16, 15);
-    ctx.fillStyle = '#F6F1E7';
+    ctx.fillStyle = '#F7EFF3';
     ctx.font = '400 40px ' + SERIF;
     ctx.textBaseline = 'middle';
     ctx.fillText('Lumorph', pad + 46, pad + 18);
 
     // date
-    ctx.fillStyle = 'rgba(155,150,140,0.95)';
+    ctx.fillStyle = 'rgba(169,152,164,0.95)';
     ctx.font = '500 22px ' + SANS;
     ctx.textAlign = 'right';
     ctx.fillText(new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), W - pad, pad + 18);
@@ -4968,8 +4970,8 @@ setTimeout(function () {
     // score
     const grad = ctx.createLinearGradient(0, 240, W * 0.7, 620);
     grad.addColorStop(0, '#FFF6DF');
-    grad.addColorStop(0.5, '#EAD5A2');
-    grad.addColorStop(1, '#C6A167');
+    grad.addColorStop(0.5, '#F0A170');
+    grad.addColorStop(1, '#C97B4E');
 
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = grad;
@@ -4982,16 +4984,16 @@ setTimeout(function () {
     const scoreW = ctx.measureText(scoreTxt).width;
     const tx = pad + scoreW + 30;
 
-    ctx.fillStyle = 'rgba(155,150,140,0.9)';
+    ctx.fillStyle = 'rgba(169,152,164,0.9)';
     ctx.font = '500 26px ' + SANS;
     ctx.fillText('out of 10', tx, 468);
 
-    ctx.fillStyle = '#F6F1E7';
+    ctx.fillStyle = '#F7EFF3';
     ctx.font = '400 60px ' + SERIF;
     ctx.fillText(scoreWordFor(scan.overall), tx, 560);
 
     const tier = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
-    ctx.fillStyle = 'rgba(234,213,162,0.95)';
+    ctx.fillStyle = 'rgba(240,161,112,0.95)';
     ctx.font = '400 34px ' + SERIF;
     ctx.fillText(tier.label, tx, 618);
 
@@ -5017,14 +5019,14 @@ setTimeout(function () {
       ctx.fill();
 
       const g2 = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-      g2.addColorStop(0, '#8C6B33');
-      g2.addColorStop(0.55, '#EAD5A2');
+      g2.addColorStop(0, '#8A4F2E');
+      g2.addColorStop(0.55, '#F0A170');
       g2.addColorStop(1, '#FFF3D6');
       ctx.fillStyle = g2;
       roundRect(ctx, barX, y - 6, Math.max(12, barW * (v / 10)), 12, 6);
       ctx.fill();
 
-      ctx.fillStyle = '#EAD5A2';
+      ctx.fillStyle = '#F0A170';
       ctx.font = '400 30px ' + SERIF;
       ctx.textAlign = 'right';
       ctx.fillText(v.toFixed(1), W - pad, y + 10);
@@ -5035,10 +5037,10 @@ setTimeout(function () {
     // streak strip
     const st = streak();
     if (st > 0) {
-      ctx.fillStyle = 'rgba(234,213,162,0.12)';
+      ctx.fillStyle = 'rgba(240,161,112,0.12)';
       roundRect(ctx, pad, H - 220, 300, 62, 31);
       ctx.fill();
-      ctx.fillStyle = '#EAD5A2';
+      ctx.fillStyle = '#F0A170';
       ctx.font = '600 26px ' + SANS;
       ctx.fillText(st + (st === 1 ? ' day streak' : ' day streak'), pad + 28, H - 180);
     }
@@ -5046,7 +5048,7 @@ setTimeout(function () {
     // footer
     ctx.fillStyle = 'rgba(255,255,255,0.10)';
     ctx.fillRect(pad, H - 118, W - pad * 2, 1);
-    ctx.fillStyle = 'rgba(155,150,140,0.85)';
+    ctx.fillStyle = 'rgba(169,152,164,0.85)';
     ctx.font = '500 22px ' + SANS;
     ctx.fillText('lumorph.vercel.app', pad, H - 66);
     ctx.textAlign = 'right';
@@ -5104,10 +5106,10 @@ setTimeout(function () {
       const lm = E.decodeLandmarks(scan.lm);
       if (lm && pts.length) {
         const p = pts.map((i) => ({ x: lm[i].x * W, y: lm[i].y * H }));
-        ctx.strokeStyle = 'rgba(234,213,162,0.95)';
+        ctx.strokeStyle = 'rgba(240,161,112,0.95)';
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
-        ctx.shadowColor = 'rgba(234,213,162,0.8)';
+        ctx.shadowColor = 'rgba(240,161,112,0.8)';
         ctx.shadowBlur = 12;
         if (p.length > 1) {
           ctx.beginPath();
@@ -5133,7 +5135,7 @@ setTimeout(function () {
     } else {
       cv.width = 700; cv.height = 500;
       const c0 = cv.getContext('2d');
-      c0.fillStyle = '#0B0B10'; c0.fillRect(0, 0, 700, 500);
+      c0.fillStyle = '#160C19'; c0.fillRect(0, 0, 700, 500);
       c0.fillStyle = 'rgba(246,241,231,0.55)';
       c0.font = '500 22px ' + SANS;
       c0.textAlign = 'center';
@@ -5243,13 +5245,13 @@ setTimeout(function () {
     const pad = 90;
     // header band
     const g = ctx.createLinearGradient(0, 0, W, 0);
-    g.addColorStop(0, '#0B0B10');
+    g.addColorStop(0, '#160C19');
     g.addColorStop(1, '#171410');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, 300);
 
     drawOrb(ctx, pad + 18, 118, 16);
-    ctx.fillStyle = '#F6F1E7';
+    ctx.fillStyle = '#F7EFF3';
     ctx.font = '400 44px ' + SERIF;
     ctx.textBaseline = 'middle';
     ctx.fillText('Lumorph', pad + 50, 120);
@@ -5998,7 +6000,7 @@ setTimeout(function () {
       : S.theme;
     document.documentElement.setAttribute('data-theme', t);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'light' ? '#F6F3EC' : '#07070A');
+    if (meta) meta.setAttribute('content', t === 'light' ? '#F6F3EC' : '#100812');
   }
 
   if (window.matchMedia) {
