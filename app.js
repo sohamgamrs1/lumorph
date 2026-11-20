@@ -143,6 +143,46 @@
     return [head.join(',')].concat(rows.map((r) => head.map((h) => esc(r[h])).join(','))).join('\n');
   }
 
+  function cameraReport() {
+    const secure = window.isSecureContext ? 'yes' : 'NO \u2014 camera needs https';
+    const gum = navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'available' : 'MISSING';
+    const installed = isInstalled() ? 'installed' : 'browser tab';
+    const model = cam.lmCached ? 'loaded' : (cam.lmReady ? 'loading' : 'not loaded');
+    const ua = navigator.userAgent.replace(/\) .*/, ')');
+    return [
+      'secure context: ' + secure,
+      'getUserMedia: ' + gum,
+      'display: ' + installed,
+      'face model: ' + model,
+      'screen: ' + window.screen.width + '\u00d7' + window.screen.height,
+      'ua: ' + ua
+    ].join('\n');
+  }
+
+  function openDiagnostics() {
+    const out = h('pre', { class: 'diag' }, cameraReport());
+    const result = h('p', { class: 'small mt-12' }, '');
+    openSheet(h('div', {},
+      h('h2', { class: 'display sm' }, 'Camera check'),
+      h('p', { class: 'small mt-8' }, 'If scanning misbehaves, this is what to send.'),
+      out,
+      result,
+      h('div', { class: 'row gap-8 mt-16' },
+        h('button', { class: 'btn small ghost', onclick: async () => {
+          result.textContent = 'Asking the camera\u2026';
+          try {
+            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+            const t = s.getVideoTracks()[0];
+            const st = t ? t.getSettings() : {};
+            result.textContent = 'OK \u2014 ' + (st.width || '?') + '\u00d7' + (st.height || '?') + ', ' + (t ? t.label : 'camera');
+            s.getTracks().forEach((x) => x.stop());
+          } catch (e) {
+            result.textContent = 'Failed: ' + (e && e.name ? e.name : 'unknown') + ' \u2014 ' + (e && e.message ? e.message : '');
+          }
+        } }, 'Test camera'),
+        h('button', { class: 'btn small primary', onclick: () => { closeSheet(); go('scan'); } }, 'Open scanner'))));
+  }
+
   function downloadCalibration() {
     const csv = calibrationCSV();
     if (!csv) { toast('No scans with measurements yet'); return; }
@@ -199,14 +239,152 @@
     return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
   }
 
-  const QUESTS = [
-    { id: 'am', label: T('Morning skincare'), xp: 20, icon: 'drop' },
-    { id: 'pm', label: T('Night skincare'), xp: 20, icon: 'moon' },
-    { id: 'sleep', label: T('Sleep 7+ hours'), xp: 15, icon: 'moon' },
-    { id: 'water', label: T('Drink 2L water'), xp: 10, icon: 'water' },
-    { id: 'posture', label: T('Posture check'), xp: 10, icon: 'posture' },
-    { id: 'groom', label: T('Grooming'), xp: 10, icon: 'comb' }
-  ];
+  /* ---------- routine engine ----------
+     The plan is built from the weakest signals in the last scan, not from a
+     fixed list. Every step names the measurement it is for, so nothing in the
+     routine is there for decoration. */
+  const ROUTINE = {
+    evenness: {
+      label: 'Tone evenness',
+      why: 'Tone is set by sun and by time more than by any single product.',
+      steps: [
+        { id: 'spf', when: 'am', xp: 20, icon: 'sun', title: 'Sunscreen, every morning', why: 'SPF 30+, two finger lengths. This is the step that actually changes tone over months.' },
+        { id: 'vitc', when: 'am', xp: 0, icon: 'drop', title: 'Vitamin C in the morning', why: 'Under the sunscreen. Give it eight to twelve weeks before you judge it.' }
+      ]
+    },
+    redness: {
+      label: 'Redness',
+      why: 'Redness is usually irritation or heat, not a permanent feature.',
+      steps: [
+        { id: 'gentle', when: 'pm', xp: 15, icon: 'drop', title: 'Gentle cleanse, lukewarm water', why: 'Hot water and scrubbing keep redness alive. Neither is cleaning you better.' },
+        { id: 'azelaic', when: 'pm', xp: 0, icon: 'moon', title: 'Azelaic acid, two nights a week', why: 'Build up slowly. More frequent is not faster, it is just redder.' }
+      ]
+    },
+    texture: {
+      label: 'Texture',
+      why: 'Texture is the most responsive of the skin signals.',
+      steps: [
+        { id: 'bha', when: 'pm', xp: 15, icon: 'moon', title: 'Salicylic acid, two nights a week', why: 'Start at two nights. It clears the pore, not the whole face.' },
+        { id: 'noscrub', when: 'pm', xp: 0, icon: 'drop', title: 'No scrubs, no picking', why: 'Physical scrubs make texture worse before they make it better, and often never get to the second part.' }
+      ]
+    },
+    shine: {
+      label: 'T-zone shine',
+      why: 'Shine is a texture and hydration question, not a washing question.',
+      steps: [
+        { id: 'gel', when: 'am', xp: 10, icon: 'drop', title: 'Gel moisturiser, thin layer', why: 'Dry skin produces more oil. Skipping moisturiser is what makes it worse.' },
+        { id: 'blot', when: 'am', xp: 0, icon: 'drop', title: 'Blot, do not wash', why: 'Washing mid-day strips the barrier and the oil comes back harder.' }
+      ]
+    },
+    underEye: {
+      label: 'Under-eye',
+      why: 'Shadow here is mostly sleep, fluid and genetics, in that order.',
+      steps: [
+        { id: 'sleep', when: 'pm', xp: 15, icon: 'moon', title: 'Seven hours, same time nightly', why: 'The single largest lever on under-eye shadow. Creams are a distant fourth.' },
+        { id: 'salt', when: 'pm', xp: 10, icon: 'water', title: 'Ease off salt and alcohol at night', why: 'Both hold fluid under the eyes until mid-morning.' }
+      ]
+    },
+    angularity: {
+      label: 'Jaw and cheek definition',
+      why: 'Definition is body composition and posture far more than bone.',
+      steps: [
+        { id: 'bodyfat', when: 'day', xp: 20, icon: 'bolt', title: 'Hold a steady calorie deficit', why: 'Jaw and cheekbone definition is the last place fat leaves. It is the biggest lever you have and the slowest.' },
+        { id: 'posture', when: 'day', xp: 10, icon: 'posture', title: 'Posture check, twice a day', why: 'Head-forward posture flattens the jaw line in every photograph, and in the mirror eventually.' }
+      ]
+    },
+    features: {
+      label: 'Eye and brow area',
+      why: 'Most of what reads as tiredness is grooming and fluid.',
+      steps: [
+        { id: 'brows', when: 'wk', xp: 0, icon: 'comb', title: 'Brows cleaned underneath only', why: 'Take the strays below the line. Leave the top and the shape alone.' },
+        { id: 'cold', when: 'am', xp: 10, icon: 'drop', title: 'Cold rinse before you go out', why: 'Ten seconds. It settles morning puffiness faster than anything you can buy.' }
+      ]
+    },
+    base: {
+      label: 'The floor',
+      why: 'These hold everything else up.',
+      steps: [
+        { id: 'am', when: 'am', xp: 20, icon: 'drop', title: 'Morning cleanse and moisturise', why: 'Twice a day, lukewarm, no scrubbing.' },
+        { id: 'pm', when: 'pm', xp: 20, icon: 'moon', title: 'Night cleanse and moisturise', why: 'The evening layer is the one that does the work overnight.' },
+        { id: 'water', when: 'day', xp: 10, icon: 'water', title: 'Two litres of water', why: 'Cheap, boring, and it shows in the skin signals within a fortnight.' }
+      ]
+    }
+  };
+
+  /* every quest that can appear, so streaks and exports keep a stable shape */
+  const QUEST_LIB = (() => {
+    const out = {};
+    Object.keys(ROUTINE).forEach((k) => {
+      ROUTINE[k].steps.forEach((s) => {
+        if (s.xp > 0) out[s.id] = { id: s.id, label: s.title, xp: s.xp, icon: s.icon || 'drop' };
+      });
+    });
+    return out;
+  })();
+  const QUESTS = Object.keys(QUEST_LIB).map((k) => QUEST_LIB[k]);
+
+  /* which parts of the face scored lowest, and how low */
+  function weakSignals(scan) {
+    if (!scan) return [];
+    const out = [];
+    (scan.details || []).forEach((d) => {
+      if (typeof d.score === 'number' && d.score < 6.5) {
+        out.push({ id: d.id, label: d.label, score: d.score, value: d.value });
+      }
+    });
+    out.sort((x, y) => x.score - y.score);
+    return out.slice(0, 3);
+  }
+
+  const SIGNAL_GROUP = {
+    evenness: 'evenness', redness: 'redness', texture: 'texture', shine: 'shine', underEye: 'underEye',
+    jawCheek: 'angularity', gonialAngle: 'angularity', jawWidth: 'angularity',
+    canthalTilt: 'features', eyeAspect: 'features', browHeight: 'features',
+    lipFullness: 'features', vermilionRatio: 'features'
+  };
+
+  function routinePlan(scan) {
+    const weak = weakSignals(scan);
+    const groups = [];
+    weak.forEach((w) => {
+      const g = SIGNAL_GROUP[w.id];
+      if (g && groups.indexOf(g) < 0) groups.push(g);
+    });
+    const p = scan && scan.pillars ? scan.pillars : {};
+    if ((p.angularity != null && p.angularity < 6) && groups.indexOf('angularity') < 0) groups.push('angularity');
+    if ((p.skin != null && p.skin < 6) && groups.indexOf('texture') < 0) groups.push('texture');
+    groups.push('base');
+
+    const seen = {};
+    const steps = [];
+    groups.forEach((g) => {
+      (ROUTINE[g] ? ROUTINE[g].steps : []).forEach((s) => {
+        if (seen[s.id]) return;
+        seen[s.id] = true;
+        steps.push(Object.assign({ group: g }, s));
+      });
+    });
+
+    return {
+      focus: groups.filter((g) => g !== 'base').slice(0, 3).map((g) => ({
+        id: g, label: ROUTINE[g].label, why: ROUTINE[g].why,
+        score: weak.length ? (weak.find((w) => SIGNAL_GROUP[w.id] === g) || {}).score : null
+      })),
+      am: steps.filter((s) => s.when === 'am'),
+      pm: steps.filter((s) => s.when === 'pm'),
+      day: steps.filter((s) => s.when === 'day'),
+      wk: steps.filter((s) => s.when === 'wk'),
+      all: steps
+    };
+  }
+
+  /* today's list comes from the plan, so it follows what the scan found */
+  function todayQuests() {
+    const plan = routinePlan(lastScan());
+    return plan.all.filter((s) => s.xp > 0).slice(0, 6)
+      .map((s) => ({ id: s.id, label: s.title, xp: s.xp, icon: s.icon || 'drop' }));
+  }
+
   const WEEKLY = { id: 'rescan', label: T('Weekly re-scan'), xp: 100, icon: 'refresh' };
   const BADGES = [
     { id: 'founder', label: 'Founder' },
@@ -287,7 +465,7 @@
     for (let i = 0; i < 400; i++) {
       const k = todayKey(d);
       const q = S.quests[k] || {};
-      const done = QUESTS.filter((x) => q[x.id]).length;
+      const done = todayQuests().filter((x) => q[x.id]).length;
       if (done >= 1) { n++; d.setDate(d.getDate() - 1); }
       else if (i === 0) { d.setDate(d.getDate() - 1); }
       else break;
@@ -1036,7 +1214,7 @@
     const scan = lastScan();
     const rk = rankOf(S.xp);
     const q = dayQuests();
-    const done = QUESTS.filter((x) => q[x.id]).length;
+    const done = todayQuests().filter((x) => q[x.id]).length;
     const hour = new Date().getHours();
     const greet = hour < 5 ? T('Still up') : hour < 12 ? T('Good morning') : hour < 17 ? T('Good afternoon') : hour < 22 ? T('Good evening') : T('Still up');
     const focus = scan && scan.pillars
@@ -1053,7 +1231,7 @@
       days.push({
         d: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()],
         n: d.getDate(),
-        done: QUESTS.some((x) => qq[x.id]),
+        done: todayQuests().some((x) => qq[x.id]),
         today: i === 0
       });
     }
@@ -1128,7 +1306,7 @@
         h('div', { class: 'card-h' },
           h('div', { class: 'eyebrow' }, 'Today \u00b7 daily quests'),
           h('div', { class: 'small quest-count' }, done + '/6')),
-        h('div', {}, QUESTS.map((q2) => questRow(q2, q))),
+        h('div', {}, todayQuests().map((q2) => questRow(q2, q))),
         h('div', { class: 'row between mt-16', style: { paddingTop: '14px', borderTop: '1px solid var(--line)' } },
           h('div', {},
             h('div', { class: 'small xp-next' }, rk.next ? rk.next.at - S.xp + ' XP to ' + rk.next.name : T('Top rank reached')),
@@ -1188,7 +1366,7 @@
     const on = !q[q2.id];
     q[q2.id] = on;
     S.xp = Math.max(0, S.xp + (on ? q2.xp : -q2.xp));
-    const done = QUESTS.filter((x) => q[x.id]).length;
+    const done = todayQuests().filter((x) => q[x.id]).length;
     if (done >= 4 && !q._bonus) { q._bonus = true; S.xp += 25; toast('Four cleared \u2014 +25 bonus XP'); }
     else if (done < 4 && q._bonus) { q._bonus = false; S.xp -= 25; }
     else if (on) toast('+' + q2.xp + ' XP');
@@ -1327,7 +1505,7 @@
       d.setDate(start.getDate() + i);
       const k = todayKey(d);
       const q = S.quests[k] || {};
-      const done = QUESTS.filter((x) => q[x.id]).length;
+      const done = todayQuests().filter((x) => q[x.id]).length;
       let cls = '';
       if (d > today) cls = '';
       else if (done === 0) cls = 'frozen';
@@ -2919,30 +3097,95 @@
   }
 
   ROUTES.routine = function (root) {
-    const steps = routineSteps();
+    const scan = lastScan();
+    const plan = routinePlan(scan);
+    const done = dayQuests();
+    const qDone = todayQuests().filter((q) => done[q.id]).length;
+
+    const stepRow = (s, i, last) => h('div', { class: 'row gap-12', style: { padding: '14px 0', borderTop: i ? '1px solid var(--line)' : 'none' } },
+      h('div', { class: 'step-dot' + (s.xp > 0 && done[s.id] ? ' on' : '') },
+        s.xp > 0 && done[s.id] ? h('span', { html: I.check, style: { display: 'grid', width: '12px', height: '12px' } }) : null),
+      h('div', { class: 'grow' },
+        h('div', { class: 'step-t' }, s.title),
+        h('div', { class: 'small mt-4' }, s.why)),
+      s.xp > 0 ? h('span', { class: 'xp-chip' }, '+' + s.xp) : null);
+
+    const block = (title, items, i) => items.length ? h('div', { class: 'card mt-16 rise', style: { '--i': i } },
+      h('div', { class: 'eyebrow', style: { marginBottom: '6px' } }, title),
+      items.map((s, n) => stepRow(s, n, n === items.length - 1))) : null;
+
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
         h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '14px' } },
           h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('home') },
             h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } }))),
-        h('p', { class: 'eyebrow' }, 'Built from your profile'),
-        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'Skin ', h('em', {}, 'routine')),
-        h('p', { class: 'lede' }, 'Short on purpose. A routine you actually finish beats a better one you abandon.')),
-      h('div', { class: 'card mt-20 rise', style: { '--i': 1 } },
-        h('div', { class: 'eyebrow', style: { marginBottom: '12px' } }, steps.length + ' steps'),
-        steps.map((s, i) => h('div', { class: 'row gap-12', style: { padding: '12px 0', borderTop: i ? '1px solid var(--line)' : 'none' } },
-          h('div', { class: 'pill gold', style: { width: '26px', height: '26px', padding: '0', justifyContent: 'center', flex: '0 0 auto' } }, String(i + 1)),
-          h('div', {}, h('div', { style: { fontSize: '14px', fontWeight: '600' } }, s.title),
-            h('div', { class: 'small' }, s.note))))),
+        h('p', { class: 'eyebrow' }, scan ? 'Built from your last scan' : 'Built from your profile'),
+        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'Your ', h('em', {}, 'routine')),
+        h('p', { class: 'lede' }, scan
+          ? 'Every step below is here because a measurement came back low. Nothing is generic.'
+          : 'Take a scan and this rebuilds itself around what you actually need.')),
+
+      plan.focus.length ? h('div', { class: 'card mt-16 rise', style: { '--i': 0.6 } },
+        h('div', { class: 'eyebrow' }, 'What needs work'),
+        plan.focus.map((f) => h('div', { class: 'focus-row' },
+          h('div', { class: 'row between' },
+            h('span', { class: 'step-t' }, f.label),
+            f.score != null ? h('span', { class: 'display sm mono', style: { color: 'var(--gold)' } }, f.score.toFixed(1)) : null),
+          h('p', { class: 'tiny mt-4' }, f.why)))) : null,
+
+      h('div', { class: 'card mt-16 rise', style: { '--i': 0.9 } },
+        h('div', { class: 'row between' },
+          h('div', { class: 'eyebrow' }, "Today's list"),
+          h('span', { class: 'pill plain' }, qDone + ' of ' + todayQuests().length)),
+        h('p', { class: 'small mt-8' }, 'Tick these on the home screen. They are the part of the routine that repeats daily.')),
+
+      block('Morning', plan.am, 1),
+      block('Evening', plan.pm, 1.2),
+      block('Through the day', plan.day, 1.4),
+      block('Weekly', plan.wk, 1.6),
+
       h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
         h('div', { class: 'eyebrow' }, 'No products, no links'),
-        h('p', { class: 'small mt-8' }, 'Lumorph does not sell anything and does not take affiliate money. Any pharmacy own-brand version of these steps works the same.')),
+        h('p', { class: 'small mt-8' }, 'Lumorph does not sell anything and takes no affiliate money. Any pharmacy own-brand version of these steps works the same.')),
       h('p', { class: 'tiny mt-16 rise', style: { '--i': 3 } },
         'General cosmetic guidance, not treatment advice. See a dermatologist for anything persistent or painful.')
     );
   };
 
   /* ---------- profile ---------- */
+  ROUTES.calibrate = function (root) {
+    const scans = (S.scans || []).filter((s) => s.metrics).slice().reverse();
+    const tagged = scans.filter((s) => s.yours != null && s.yours !== '').length;
+
+    root.append(
+      h('div', { class: 'rise', style: { '--i': 0 } },
+        h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '14px' } },
+          h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('settings') },
+            h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } }))),
+        h('p', { class: 'eyebrow' }, 'Calibration'),
+        h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'The ', h('em', {}, 'lab')),
+        h('p', { class: 'lede' }, 'Put your own score beside each photo. Enough of these and the bands get fitted to real faces instead of to a textbook.')),
+      h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
+        h('div', { class: 'row between' },
+          h('div', {}, h('div', { class: 'eyebrow' }, 'Tagged'), h('div', { class: 'display sm mt-4' }, tagged + ' of ' + scans.length)),
+          h('button', { class: 'btn small primary', onclick: downloadCalibration }, 'Export CSV'))),
+      h('div', {}, scans.length ? scans.slice(0, 40).map((s, i) => h('div', { class: 'card mt-12 rise', style: { '--i': 1.2 + i * 0.02 } },
+        h('div', { class: 'row between' },
+          h('div', {},
+            h('div', { class: 'step-t' }, new Date(s.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })),
+            h('div', { class: 'tiny mt-4' }, 'measured ' + s.overall.toFixed(1))),
+          h('input', {
+            class: 'input tiny-input', type: 'number', min: '0', max: '10', step: '0.1',
+            placeholder: 'you', value: s.yours == null ? '' : String(s.yours),
+            oninput: (e) => {
+              s.yours = e.target.value === '' ? null : Math.max(0, Math.min(10, Number(e.target.value)));
+              save();
+            }
+          })))).slice(0, 40) : [h('p', { class: 'small center mt-20' }, 'No scans with measurements yet.')]),
+      h('p', { class: 'tiny mt-16' }, 'Everything here stays on this device. The CSV is the only thing that leaves, and only when you press the button.')
+    );
+  };
+
   ROUTES.profile = function (root) {
     const rk = rankOf(S.xp);
     const t = (S.profile.skin || []).map((id) => (SKIN_TYPES.find((s) => s.id === id) || {}).t).filter(Boolean).join(', ');
@@ -3068,7 +3311,7 @@
     const key = todayKey();
     if (n.lastFired === key) { scheduleReminders(); return; }
     const q = dayQuests();
-    const done = QUESTS.filter((x) => q[x.id]).length;
+    const done = todayQuests().filter((x) => q[x.id]).length;
     if (done < 6) {
       const left = 6 - done;
       const body = done === 0
@@ -3240,6 +3483,12 @@
       /* calibration */
       h('p', { class: 'sect rise', style: { '--i': 8.0 } }, 'Calibration'),
       h('div', { class: 'group rise', style: { '--i': 8.1 } },
+        h('button', { class: 'item', style: { width: '100%', textAlign: 'left' }, onclick: () => go('calibrate') },
+          h('span', { class: 'ico', html: I.info, style: { display: 'grid' } }),
+          h('div', { class: 'txt' },
+            h('div', { class: 't' }, 'Open the lab'),
+            h('div', { class: 's' }, 'Score your own photos, one by one')),
+          h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } })),
         h('button', { class: 'item', style: { width: '100%', textAlign: 'left' }, onclick: downloadCalibration },
           h('span', { class: 'ico', html: I.download, style: { display: 'grid' } }),
           h('div', { class: 'txt' },
@@ -3248,6 +3497,16 @@
           h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }))),
       h('p', { class: 'helper rise', style: { '--i': 8.2 } },
         'Every scan keeps its 22 measurements. Export them as CSV to check the scoring against real faces. Nothing is uploaded.'),
+
+      /* diagnostics */
+      h('p', { class: 'sect rise', style: { '--i': 8.6 } }, 'Troubleshooting'),
+      h('div', { class: 'group rise', style: { '--i': 8.7 } },
+        h('button', { class: 'item', style: { width: '100%', textAlign: 'left' }, onclick: openDiagnostics },
+          h('span', { class: 'ico', html: I.scan, style: { display: 'grid' } }),
+          h('div', { class: 'txt' },
+            h('div', { class: 't' }, 'Camera check'),
+            h('div', { class: 's' }, 'Test the camera and copy the report')),
+          h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }))),
 
       /* scores & legal */
       h('p', { class: 'sect rise', style: { '--i': 8 } }, T('Scores & legal')),
@@ -3364,6 +3623,19 @@
     openSheet(h('div', { class: 'doc' }, kids));
   }
 
+  const SPENT_KEY = 'lumorph.spent';
+
+  function spentCodes() {
+    try { return JSON.parse(localStorage.getItem(SPENT_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function markSpent(key) {
+    try {
+      const spent = spentCodes();
+      spent[key] = Date.now();
+      localStorage.setItem(SPENT_KEY, JSON.stringify(spent));
+    } catch (e) { /* storage full or blocked */ }
+  }
+
   function redeemPromo() {
     const input = h('input', {
       class: 'input', placeholder: 'Enter code', maxlength: '8',
@@ -3393,9 +3665,12 @@
       }
 
       S.promos = S.promos || {};
-      if (S.promos[key]) return show('That code has already been used on this device.');
+      if (S.promos[key] || spentCodes()[key]) {
+        return show('That code has already been used on this device.');
+      }
 
       S.promos[key] = Date.now();
+      markSpent(key);
       S.xp += reward.xp;
       if (reward.scans) S.scanCredits = (S.scanCredits || 0) + reward.scans;
       S.badges = S.badges || {};
@@ -3424,6 +3699,7 @@
     openSheet(h('div', {},
       h('h2', { class: 'display sm' }, 'Delete everything?'),
       h('p', { class: 'small mt-12' }, 'This removes every scan, photo, quest and profile answer from this browser. It cannot be undone, and there is no copy anywhere else.'),
+      h('p', { class: 'tiny mt-8' }, 'Codes you have already redeemed stay marked as used, so they cannot be redeemed twice.'),
       h('div', { class: 'row gap-10 mt-20' },
         h('button', { class: 'btn ghost', onclick: closeSheet }, 'Keep it'),
         h('button', { class: 'btn danger', onclick: () => {
