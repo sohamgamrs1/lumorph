@@ -3015,8 +3015,16 @@ setTimeout(function () {
   const TABS = ['home', 'progress', 'profile'];
   const ROUTES = {};
 
+  let previousRoute = 'home';
+
+  /* where a detail page should return to: whatever opened it */
+  function backFrom(fallback) {
+    return (previousRoute && previousRoute !== 'how') ? previousRoute : fallback;
+  }
+
   function go(name, opts) {
     stopCam();
+    if (name !== route && route && route !== 'how') previousRoute = route;
     route = name;
     if (navTimer) clearTimeout(navTimer);
     view.classList.remove('enter');
@@ -5926,7 +5934,7 @@ setTimeout(function () {
     root.append(
       h('div', { class: 'rise', style: { '--i': 0 } },
         h('div', { class: 'row', style: { paddingTop: '6px', marginBottom: '16px' } },
-          h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go('settings') },
+          h('button', { class: 'icon-btn', 'aria-label': 'Back', onclick: () => go(backFrom('settings')) },
             h('span', { html: I.back, style: { display: 'grid', width: '18px', height: '18px' } }))),
         h('p', { class: 'eyebrow' }, 'Transparency'),
         h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'How these numbers are ', h('em', {}, 'calculated')),
@@ -5978,7 +5986,7 @@ setTimeout(function () {
         ])),
 
       h('div', { class: 'row gap-10 mt-20 rise', style: { '--i': 3 } },
-        h('button', { class: 'btn ghost', onclick: () => go('settings') }, 'Back to settings'),
+        h('button', { class: 'btn ghost', onclick: () => go(backFrom('settings')) }, 'Back'),
         h('button', { class: 'btn primary', onclick: () => go('home') }, T('Home')))
     );
   };
