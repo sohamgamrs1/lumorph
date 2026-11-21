@@ -1,3 +1,4 @@
+
 /* Lumorph boot guard: if the app cannot start, say so instead of a blank screen. */
 // If anything fails to load, say so instead of showing a blank screen.
 window.__bootFail = function (msg) {
@@ -18,3 +19,4 @@ setTimeout(function () {
     window.__bootFail('The app did not start. If you opened this file directly, use the single-file build (Lumorph.html) instead.');
   }
 }, 3000);
+

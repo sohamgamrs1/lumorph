@@ -1,3 +1,4 @@
+
 /* Lumorph — interface translations.
    Keyed by the English string, so a missing entry falls back to English
    rather than showing a key. */
@@ -276,3 +277,4 @@
     }
   };
 })();
+

@@ -86,6 +86,7 @@
     doc: SVG('<path d="M6.6 3.8h6.6l4.4 4.4v12H6.6z"/><path d="M13.2 3.8v4.4h4.4"/><path d="M9.4 12.2h5.2"/><path d="M9.4 15.6h5.2"/>'),
     terms: SVG('<path d="M4 6.6h9.5"/><path d="M4 11.6h6.5"/><path d="M4 16.6h4.5"/><path d="M14.2 15.4l2.1 2.1 4.1-4.6"/>'),
     person: SVG('<circle cx="12" cy="8.1" r="3.3"/><path d="M5.4 20c.7-3.4 3.3-5.4 6.6-5.4s5.9 2 6.6 5.4"/>'),
+    ascend: SVG('<path d="M12 20.5V4.6"/><path d="M6.2 10.4 12 4.6l5.8 5.8"/><path d="M4.6 20.5h14.8"/>'),
     gift: SVG('<rect x="3.8" y="9.4" width="16.4" height="3.6" rx="1"/><path d="M5.6 13v7.4h12.8V13"/><path d="M12 9.4v11"/><path d="M12 9.4C10.4 5.8 8.9 5.2 7.7 6c-1.4.8-1 3.4 4.3 3.4z"/><path d="M12 9.4c1.6-3.6 3.1-4.2 4.3-3.4 1.4.8 1 3.4-4.3 3.4z"/>'),
     braces: SVG('<path d="M9.2 4.4H7.6A1.6 1.6 0 0 0 6 6v3.1c0 1-.6 1.9-1.6 2.2v1.4c1 .3 1.6 1.2 1.6 2.2V18a1.6 1.6 0 0 0 1.6 1.6h1.6"/><path d="M14.8 4.4h1.6A1.6 1.6 0 0 1 18 6v3.1c0 1 .6 1.9 1.6 2.2v1.4c-1 .3-1.6 1.2-1.6 2.2V18a1.6 1.6 0 0 1-1.6 1.6h-1.6"/>'),
     table: SVG('<rect x="3.6" y="5" width="16.8" height="14" rx="2.2"/><path d="M3.6 10h16.8"/><path d="M9.6 10v9"/>'),
@@ -632,6 +633,7 @@
     scan: ['Scan your face — Lumorph', 'Take a scan. It is measured on your device and never uploaded.'],
     results: ['Your results — Lumorph', 'Your face score, the five pillars behind it, and what to work on next.'],
     progress: ['Progress — Lumorph', 'Every scan charted, with your streak and your week.'],
+    ascend: ['Ascend — the 90 day challenge', 'Ninety days of daily quests, for 1000 XP and five extra scans.'],
     profile: ['Profile — Lumorph', 'Your details, badges and settings.'],
     settings: ['Settings and privacy — Lumorph', 'Appearance, language, notifications, data and legal.'],
     routine: ['Your routine — Lumorph', 'The skincare and grooming routine built from your scan.'],
@@ -758,6 +760,7 @@
     const items = [
       { id: 'home', label: T('Home'), icon: I.home },
       { id: 'progress', label: T('Progress'), icon: I.progress },
+      { id: 'ascend', label: T('Ascend'), icon: I.ascend },
       { id: 'profile', label: T('Profile'), icon: I.profile }
     ];
     const inner = h('div', { class: 'inner' });
@@ -1259,7 +1262,7 @@
           h('span', { class: 'd' }, d.d), h('span', { class: 'n' }, String(d.n)), h('span', { class: 'mark' })))),
 
       h('p', { class: 'small mt-12 rise day-line', style: { '--i': 2 } },
-        done === 0 ? 'Nothing yet today \u2014 clear a quest or take a scan.' : done + ' of 6 cleared today. Keep going.'),
+        done === 0 ? 'Nothing yet today \u2014 clear a quest or take a scan.' : done + ' of ' + DAILY.length + ' cleared today. Keep going.'),
 
       /* focus card */
       h('div', { class: 'card gold mt-20 rise', style: { '--i': 3 } },
@@ -1309,13 +1312,13 @@
           h('div', {},
             h('div', { style: { fontSize: '14px', fontWeight: '600' } }, T('Your plan')),
             h('div', { class: 'small' }, planLine())),
-          h('div', { class: 'pill' }, done + '/6') )),
+          h('div', { class: 'pill' }, done + '/' + DAILY.length) )),
 
       /* quests */
       h('div', { class: 'card mt-16 rise', style: { '--i': 6 } },
         h('div', { class: 'card-h' },
           h('div', { class: 'eyebrow' }, 'Today \u00b7 daily quests'),
-          h('div', { class: 'small quest-count' }, done + '/6')),
+          h('div', { class: 'small quest-count' }, done + '/' + DAILY.length)),
         h('div', {}, todayQuests().map((q2) => questRow(q2, q))),
         h('div', { class: 'row between mt-16', style: { paddingTop: '14px', borderTop: '1px solid var(--line)' } },
           h('div', {},
@@ -1370,6 +1373,55 @@
       h('span', { class: 'xp' }, '+' + q2.xp));
   }
 
+  /* ---------- 90 day challenge ----------
+     A day counts when every habit on that date's list is ticked. Nothing is
+     stored per day: the record is the quest log itself, so a missed day simply
+     stays empty instead of being rewritten. */
+  const ASCEND_DAYS = 90;
+  const DAY_MS = 86400000;
+
+  function startOfDay(ts) {
+    const d = new Date(ts);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function ascendState() {
+    const a2 = S.ascend || {};
+    if (!a2.start) return { started: false, day: 0, completed: 0, done: false, rewarded: !!a2.rewarded };
+    const startDay = startOfDay(a2.start);
+    const today = startOfDay(Date.now());
+    const rawDay = Math.floor((today - startDay) / DAY_MS) + 1;
+    const day = Math.max(1, Math.min(ASCEND_DAYS, rawDay));
+
+    let completed = 0;
+    for (let i = 1; i <= Math.min(day, ASCEND_DAYS); i++) {
+      const key = todayKey(startDay + (i - 1) * DAY_MS);
+      const q = S.quests[key];
+      if (q && DAILY.every((d) => q[d.id])) completed++;
+    }
+    return { started: true, day, completed, done: completed >= ASCEND_DAYS, rewarded: !!a2.rewarded, raw: rawDay };
+  }
+
+  function startAscend() {
+    S.ascend = { start: Date.now(), rewarded: false };
+    save();
+    haptic(18);
+    toast('Day one. Ninety to go.');
+    go('ascend');
+  }
+
+  function checkAscend() {
+    const st = ascendState();
+    if (!st.started || !st.done || st.rewarded) return;
+    S.ascend.rewarded = true;
+    S.xp += 1000;
+    S.scanCredits = (S.scanCredits || 0) + 5;
+    save();
+    haptic(30);
+    toast('Challenge complete \u2014 +1000 XP and 5 extra scans');
+  }
+
   function toggleQuest(q2, rowEl) {
     const q = dayQuests();
     const before = S.xp;
@@ -1382,6 +1434,7 @@
     else if (on) toast('+' + q2.xp + ' XP');
     save();
     haptic(on ? 10 : 6);
+    checkAscend();
 
     /* update the screen in place: no re-render, no scroll jump, no replayed animation */
     if (rowEl) {
@@ -1390,11 +1443,11 @@
       if (sub) sub.textContent = on ? T('Cleared') : T('Tap to clear');
     }
     const count = view.querySelector('.quest-count');
-    if (count) count.textContent = done + '/6';
+    if (count) count.textContent = done + '/' + DAILY.length;
     const line = view.querySelector('.day-line');
     if (line) line.textContent = done === 0
       ? 'Nothing yet today \u2014 clear a quest or take a scan.'
-      : done + ' of 6 cleared today. Keep going.';
+      : done + ' of ' + DAILY.length + ' cleared today. Keep going.';
     const xpEl = view.querySelector('.xp-total');
     if (xpEl) animateNumber(xpEl, S.xp, { from: before, dp: 0, dur: 620 });
     const rk = rankOf(S.xp);
@@ -3237,6 +3290,67 @@
     toast(on ? '+' + step.xp + ' XP' : 'Unmarked');
   }
 
+  ROUTES.ascend = function (root) {
+    const st = ascendState();
+    const q = dayQuests();
+    const todayDone = DAILY.filter((d) => q[d.id]).length;
+
+    if (!st.started) {
+      root.append(
+        h('div', { class: 'rise', style: { '--i': 0 } },
+          h('p', { class: 'eyebrow' }, 'Challenge'),
+          h('h1', { class: 'display lg', style: { marginTop: '6px' } }, 'Ninety ', h('em', {}, 'days')),
+          h('p', { class: 'lede' }, 'Clear your daily list every day for ninety days. Miss one and it stays empty \u2014 the challenge does not wait.'),
+          h('div', { class: 'card mt-20' },
+            h('div', { class: 'eyebrow' }, 'The reward'),
+            h('div', { class: 'display sm mt-8' }, '+1000 XP and 5 extra scans'),
+            h('p', { class: 'small mt-8' }, 'Paid once, on the ninetieth completed day.')),
+          h('button', { class: 'btn primary mt-20', onclick: startAscend }, 'Start day one')));
+      return;
+    }
+
+    const pct = Math.round((st.completed / ASCEND_DAYS) * 100);
+    const dots = [];
+    for (let i = 1; i <= ASCEND_DAYS; i++) {
+      const key = todayKey(startOfDay(S.ascend.start) + (i - 1) * DAY_MS);
+      const done = S.quests[key] && DAILY.every((d) => S.quests[key][d.id]);
+      const isToday = i === st.day;
+      dots.push(h('span', {
+        class: 'adot' + (done ? ' done' : '') + (isToday ? ' today' : '') + (i < st.day && !done ? ' missed' : '')
+      }));
+    }
+
+    root.append(
+      h('div', { class: 'rise', style: { '--i': 0 } },
+        h('div', { class: 'row between' },
+          h('div', {},
+            h('p', { class: 'eyebrow' }, 'Ascend challenge'),
+            h('div', { class: 'display lg', style: { marginTop: '4px' } }, 'Day ' + st.day + ' of 90')),
+          st.done ? h('span', { class: 'pill gold' }, 'Complete') : h('span', { class: 'pill plain' }, st.completed + ' done'))),
+
+      h('div', { class: 'card mt-16 rise', style: { '--i': 1 } },
+        h('div', { class: 'bar-track' }, h('i', { style: { transform: 'scaleX(' + (st.completed / ASCEND_DAYS) + ')' } })),
+        h('p', { class: 'tiny mt-8' }, pct + '% \u00b7 ' + (ASCEND_DAYS - st.completed) + ' days to go'),
+        h('div', { class: 'adots' }, dots)),
+
+      h('div', { class: 'card mt-16 rise', style: { '--i': 2 } },
+        h('div', { class: 'row between' },
+          h('div', { class: 'eyebrow' }, "Today's quests"),
+          h('span', { class: 'pill plain' }, todayDone + ' of ' + DAILY.length)),
+        h('p', { class: 'small mt-8' }, 'The same list as home. Clear all of it to bank the day.'),
+        h('div', { style: { marginTop: '10px' } }, DAILY.map((d) => questRow(d, q)))),
+
+      h('div', { class: 'card mt-16 rise', style: { '--i': 3 } },
+        h('div', { class: 'eyebrow' }, st.done ? 'Reward paid' : 'The reward'),
+        h('div', { class: 'display sm mt-8' }, '+1000 XP and 5 extra scans'),
+        h('p', { class: 'small mt-8' }, st.done
+          ? 'You finished all ninety days. The XP and the scans are already on your account.'
+          : 'Paid once, on the ninetieth completed day.')),
+      h('p', { class: 'tiny mt-16 rise', style: { '--i': 4 } },
+        'One day at a time. A missed day cannot be made up later.')
+    );
+  };
+
   ROUTES.calibrate = function (root) {
     const scans = (S.scans || []).filter((s) => s.metrics).slice().reverse();
     const tagged = scans.filter((s) => s.yours != null && s.yours !== '').length;
@@ -3764,7 +3878,8 @@
       closeSheet();
       haptic(20);
       toast('+' + reward.xp + ' XP' + (reward.scans ? ' \u00b7 +' + reward.scans + ' scan' + (reward.scans > 1 ? 's' : '') : ''));
-      go('settings');
+      // stay where you are: redeeming from home should not throw you into settings
+      if (route !== 'home' && route !== 'settings') go('home');
     };
 
     openSheet(h('div', {},
@@ -3964,7 +4079,7 @@
     S = blank();
     S.theme = keepTheme;
     S.onboarded = true;
-    S.profile = { name: 'Soham', gender: 'male', birth: '2001-11-18', height: 178, skin: ['balanced', 'oily'], concerns: ['clarity', 'definition', 'eyes'] };
+    S.profile = { name: 'Apex', gender: 'male', age: 24, height: 178, skin: ['balanced', 'oily'], concerns: ['clarity', 'definition', 'eyes'] };
     S.consent = { type: 'local-analysis', at: Date.now() };
     S.theme = 'dark';
     const targets = [6.4, 6.7, 6.6, 7.1, 7.3, 7.2, 7.6, 7.8];

@@ -1,55 +1,25 @@
-/* Build a single self-contained Lumorph.html:
-   CSS and JS inlined so the app runs from file:// on any device,
-   where browsers refuse to load sibling stylesheets and scripts. */
+#!/usr/bin/env node
+/* Inline every asset into one file so the app also runs from file:// */
 const fs = require('fs');
 const path = require('path');
-
-const dir = __dirname;
-const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
+const root = __dirname;
+const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
 let html = read('index.html');
-const css = read('styles.css');
-const boot = read('boot.js');
-const i18n = read('i18n.js');
-const engine = read('engine.js');
-const app = read('app.js');
+const safe = (js) => js.replace(/<\/script>/gi, '<\\/script>');
 
-// 1. inline the stylesheet
-html = html.replace(
-  /<link rel="stylesheet" href="\.\/styles\.css" \/>/,
-  '<style>\n' + css + '\n</style>'
-);
+// the single-file build has its scripts inline, which the shipped CSP forbids;
+// drop the meta here only — the deployed version keeps it via vercel.json
+html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\s*/i, '');
 
-// 2a. drop the CSP meta: this build inlines its scripts, so it would block itself
-html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/, '');
+html = html.replace(/<link rel="stylesheet" href="\.\/styles\.css"\s*\/>/,
+  () => '<style>\n' + read('styles.css') + '\n</style>');
 
-// 2. drop the manifest and icon links (they need sibling files)
-html = html.replace(/<link rel="manifest" href="\.\/manifest\.webmanifest" \/>\n?/, '');
-html = html.replace(/<link rel="icon" href="\.\/icons\/icon-192\.png" \/>\n?/, '');
-html = html.replace(/<link rel="apple-touch-icon" href="\.\/icons\/icon-192\.png" \/>\n?/, '');
-
-// 3. inline the scripts
-html = html.replace(
-  /<script src="\.\/boot\.js"><\/script>/,
-  '<script>\n' + boot + '\n</script>'
-);
-html = html.replace(
-  /<script src="\.\/i18n\.js"><\/script>/,
-  '<script>\n' + i18n + '\n</script>'
-);
-html = html.replace(
-  /<script src="\.\/engine\.js"><\/script>/,
-  '<script>\n' + engine + '\n</script>'
-);
-html = html.replace(
-  /<script src="\.\/app\.js"><\/script>/,
-  '<script>\n' + app + '\n</script>'
-);
-
-if (html.includes('src="./app.js"') || html.includes('href="./styles.css"')) {
-  throw new Error('inlining failed: a relative reference survived');
+for (const file of ['boot.js', 'i18n.js', 'engine.js', 'app.js']) {
+  const re = new RegExp('<script src="\\./' + file.replace('.', '\\.') + '"></script>');
+  if (!re.test(html)) { console.error('could not find tag for', file); process.exit(1); }
+  html = html.replace(re, () => '<script>\n' + safe(read(file)) + '\n</script>');
 }
 
-const out = path.join(dir, 'Lumorph.html');
-fs.writeFileSync(out, html);
-console.log('written', out, (html.length / 1024).toFixed(1) + ' KB');
+fs.writeFileSync(path.join(root, 'Lumorph.html'), html);
+console.log('written Lumorph.html', (Buffer.byteLength(html) / 1024).toFixed(1), 'KB');

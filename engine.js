@@ -1,3 +1,4 @@
+
 /* ============================================================
    Lumorph — scoring engine
    Deterministic. On-device. No network, no AI, no cost.
@@ -746,3 +747,4 @@
     band, makeGeo
   };
 })(window);
+

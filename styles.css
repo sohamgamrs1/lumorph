@@ -439,9 +439,9 @@ a { color: inherit; }
   justify-content: center;
   gap: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   transition: color var(--t-fast) var(--ease), transform 140ms var(--spring);
 }
 .tabbar button svg { width: 20px; height: 20px; }
@@ -449,15 +449,15 @@ a { color: inherit; }
 .tabbar button:active { transform: scale(0.92); }
 .tabbar .scan-fab {
   flex: 0 0 auto;
-  width: 78px;
+  width: 72px;
   height: 46px;
-  margin: 0 4px;
+  margin: 0 3px;
   border-radius: 999px;
   background: var(--accent-solid);
   color: var(--on-accent);
   flex-direction: row;
-  gap: 7px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 700;
   box-shadow: 0 10px 24px -12px rgba(var(--gold-rgb), 0.7);
 }
@@ -951,18 +951,56 @@ a { color: inherit; }
 }
 .age-note.warn { color: var(--danger); }
 
-/* ---------- icon centring ---------- */
-.icon-btn, .step-dot, .ico, .pill, .xp-chip, .gift-btn, .tabbar button, .scan-fab {
+/* ---------- ascend ---------- */
+.bar-track {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.bar-track i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 99px;
+  background: var(--bar-grad);
+  transform-origin: left center;
+  transition: transform 420ms var(--ease);
+}
+.adots {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 6px;
+  margin-top: 14px;
+}
+.adot {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.adot.done { background: var(--gold); border-color: var(--gold); }
+.adot.today { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); }
+.adot.missed { background: rgba(var(--gold-rgb), 0.10); border-color: rgba(var(--gold-rgb), 0.22); }
+
+/* ---------- icon centring ----------
+   Only containers that hold a single icon become grids. Pills are inline-flex
+   and tab buttons are flex-column, and forcing them to grid stacked their
+   contents — that is what put the rank badge's dot above its label. */
+.icon-btn, .step-dot, .ico, .gift-btn {
   display: grid;
   place-items: center;
 }
-.icon-btn svg, .step-dot svg, .ico svg, .pill svg, .gift-btn svg,
-.tabbar button svg, .scan-fab svg, .btn svg {
+.icon-btn svg, .step-dot svg, .ico svg, .gift-btn svg {
   width: 100%;
   height: 100%;
   display: block;
   flex: 0 0 auto;
 }
+.tabbar button svg { width: 20px; height: 20px; display: block; flex: 0 0 auto; }
+.tabbar .scan-fab svg { width: 17px; height: 17px; display: block; flex: 0 0 auto; }
+.pill svg { width: 14px; height: 14px; display: block; flex: 0 0 auto; }
+.btn svg { display: block; flex: 0 0 auto; }
 .step-row { cursor: pointer; }
 .step-row:active { opacity: .75; }
 .gift-btn { margin-right: 2px; }
