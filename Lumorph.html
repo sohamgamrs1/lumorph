@@ -5651,38 +5651,64 @@ setTimeout(function () {
     ctx.closePath();
   }
 
-  function paintBackground(ctx, W, H) {
-    ctx.fillStyle = '#100812';
+  /* the share card is drawn on a canvas, so it cannot inherit CSS variables:
+     the palette is read from the active theme and passed down instead */
+  function cardPalette() {
+    const light = document.documentElement.getAttribute('data-theme') === 'light';
+    return light ? {
+      bg: '#F4F2ED',
+      glowA: 'rgba(47,107,87,0.10)', glowB: 'rgba(120,150,200,0.08)', glowC: 'rgba(47,107,87,0.06)',
+      ink: '#14181C', inkSoft: 'rgba(20,24,28,0.92)',
+      muted: 'rgba(94,102,110,0.95)', faint: 'rgba(94,102,110,0.85)',
+      accent: 'rgba(47,107,87,0.95)', accentSoft: 'rgba(47,107,87,0.12)',
+      line: 'rgba(20,24,28,0.10)', track: 'rgba(20,24,28,0.09)',
+      gradA: '#7FB39F', gradB: '#2F6B57', gradC: '#1F4F40',
+      orbIn: '#E6F5EE', orbA: '#8FC3B0', orbB: '#2F6B57', orbC: '#123027', orbGlow: 'rgba(47,107,87,0.35)'
+    } : {
+      bg: '#100812',
+      glowA: 'rgba(198,161,103,0.34)', glowB: 'rgba(120,96,200,0.24)', glowC: 'rgba(240,161,112,0.16)',
+      ink: '#F7EFF3', inkSoft: 'rgba(246,241,231,0.92)',
+      muted: 'rgba(169,152,164,0.95)', faint: 'rgba(169,152,164,0.85)',
+      accent: 'rgba(240,161,112,0.95)', accentSoft: 'rgba(240,161,112,0.12)',
+      line: 'rgba(255,255,255,0.10)', track: 'rgba(255,255,255,0.09)',
+      gradA: '#FFF6DF', gradB: '#F0A170', gradC: '#C97B4E',
+      orbIn: '#FFF1E6', orbA: '#F0A170', orbB: '#C97B4E', orbC: '#8A4F2E', orbGlow: 'rgba(240,161,112,0.45)'
+    };
+  }
+
+  function paintBackground(ctx, W, H, P) {
+    ctx.fillStyle = P.bg;
     ctx.fillRect(0, 0, W, H);
 
     let g = ctx.createRadialGradient(W * 0.22, H * 0.06, 0, W * 0.22, H * 0.06, W * 0.95);
-    g.addColorStop(0, 'rgba(198,161,103,0.34)');
-    g.addColorStop(0.45, 'rgba(198,161,103,0.10)');
-    g.addColorStop(1, 'rgba(198,161,103,0)');
+    g.addColorStop(0, P.glowA);
+    g.addColorStop(0.45, P.glowA.replace(/[0-9.]+\)$/, '0.10)'));
+    g.addColorStop(1, P.glowA.replace(/[0-9.]+\)$/, '0)'));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
     g = ctx.createRadialGradient(W * 0.92, H * 0.04, 0, W * 0.92, H * 0.04, W * 0.7);
-    g.addColorStop(0, 'rgba(120,96,200,0.24)');
-    g.addColorStop(1, 'rgba(120,96,200,0)');
+    g.addColorStop(0, P.glowB);
+    g.addColorStop(1, P.glowB.replace(/[0-9.]+\)$/, '0)'));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
     g = ctx.createRadialGradient(W * 0.5, H * 1.02, 0, W * 0.5, H * 1.02, W * 0.9);
-    g.addColorStop(0, 'rgba(240,161,112,0.16)');
-    g.addColorStop(1, 'rgba(240,161,112,0)');
+    g.addColorStop(0, P.glowC);
+    g.addColorStop(1, P.glowC.replace(/[0-9.]+\)$/, '0)'));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
 
-  function drawOrb(ctx, x, y, r) {
+  function drawOrb(ctx, x, y, r, P) {
+    const pal = P || cardPalette();
     const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r);
-    g.addColorStop(0, '#FFF1E6');
-    g.addColorStop(0.42, '#F0A170');
-    g.addColorStop(0.78, '#C97B4E');
-    g.addColorStop(1, '#8A4F2E');
+    g.addColorStop(0, pal.orbIn);
+    g.addColorStop(0.42, pal.orbA);
+    g.addColorStop(0.78, pal.orbB);
+    g.addColorStop(1, pal.orbC);
     ctx.save();
-    ctx.shadowColor = 'rgba(240,161,112,0.45)';
+    ctx.shadowColor = pal.orbGlow;
     ctx.shadowBlur = r * 2.2;
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -5718,19 +5744,20 @@ setTimeout(function () {
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     const ctx = cv.getContext('2d');
-    paintBackground(ctx, W, H);
+    const P = cardPalette();
+    paintBackground(ctx, W, H, P);
 
     const pad = 84;
 
     // brand
-    drawOrb(ctx, pad + 16, pad + 16, 15);
-    ctx.fillStyle = '#F7EFF3';
+    drawOrb(ctx, pad + 16, pad + 16, 15, P);
+    ctx.fillStyle = P.ink;
     ctx.font = '400 40px ' + SERIF;
     ctx.textBaseline = 'middle';
     ctx.fillText('Lumorph', pad + 46, pad + 18);
 
     // date
-    ctx.fillStyle = 'rgba(169,152,164,0.95)';
+    ctx.fillStyle = P.muted;
     ctx.font = '500 22px ' + SANS;
     ctx.textAlign = 'right';
     ctx.fillText(new Date(scan.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), W - pad, pad + 18);
@@ -5738,9 +5765,9 @@ setTimeout(function () {
 
     // score
     const grad = ctx.createLinearGradient(0, 240, W * 0.7, 620);
-    grad.addColorStop(0, '#FFF6DF');
-    grad.addColorStop(0.5, '#F0A170');
-    grad.addColorStop(1, '#C97B4E');
+    grad.addColorStop(0, P.gradA);
+    grad.addColorStop(0.5, P.gradB);
+    grad.addColorStop(1, P.gradC);
 
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = grad;
@@ -5753,16 +5780,16 @@ setTimeout(function () {
     const scoreW = ctx.measureText(scoreTxt).width;
     const tx = pad + scoreW + 30;
 
-    ctx.fillStyle = 'rgba(169,152,164,0.9)';
+    ctx.fillStyle = P.muted;
     ctx.font = '500 26px ' + SANS;
     ctx.fillText('out of 10', tx, 468);
 
-    ctx.fillStyle = '#F7EFF3';
+    ctx.fillStyle = P.ink;
     ctx.font = '400 60px ' + SERIF;
     ctx.fillText(scoreWordFor(scan.overall), tx, 560);
 
     const tier = E.tierFor(scan.overall, (S.profile && S.profile.gender) || 'other');
-    ctx.fillStyle = 'rgba(240,161,112,0.95)';
+    ctx.fillStyle = P.accent;
     ctx.font = '400 34px ' + SERIF;
     ctx.fillText(tier.label, tx, 618);
 
@@ -5779,23 +5806,23 @@ setTimeout(function () {
     const barX = pad + 250, barW = W - pad - barX - 90;
     pillars.forEach(([id, label]) => {
       const v = scan.pillars[id];
-      ctx.fillStyle = 'rgba(246,241,231,0.92)';
+      ctx.fillStyle = P.inkSoft;
       ctx.font = '500 26px ' + SANS;
       ctx.fillText(label, pad, y + 8);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.09)';
+      ctx.fillStyle = P.track;
       roundRect(ctx, barX, y - 6, barW, 12, 6);
       ctx.fill();
 
       const g2 = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-      g2.addColorStop(0, '#8A4F2E');
-      g2.addColorStop(0.55, '#F0A170');
-      g2.addColorStop(1, '#FFF3D6');
+      g2.addColorStop(0, P.gradC);
+      g2.addColorStop(0.55, P.gradB);
+      g2.addColorStop(1, P.gradA);
       ctx.fillStyle = g2;
       roundRect(ctx, barX, y - 6, Math.max(12, barW * (v / 10)), 12, 6);
       ctx.fill();
 
-      ctx.fillStyle = '#F0A170';
+      ctx.fillStyle = P.accent;
       ctx.font = '400 30px ' + SERIF;
       ctx.textAlign = 'right';
       ctx.fillText(v.toFixed(1), W - pad, y + 10);
@@ -5806,22 +5833,22 @@ setTimeout(function () {
     // streak strip
     const st = streak();
     if (st > 0) {
-      ctx.fillStyle = 'rgba(240,161,112,0.12)';
+      ctx.fillStyle = P.accentSoft;
       roundRect(ctx, pad, H - 220, 300, 62, 31);
       ctx.fill();
-      ctx.fillStyle = '#F0A170';
+      ctx.fillStyle = P.accent;
       ctx.font = '600 26px ' + SANS;
       ctx.fillText(st + (st === 1 ? ' day streak' : ' day streak'), pad + 28, H - 180);
     }
 
     // footer
-    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillStyle = P.line;
     ctx.fillRect(pad, H - 118, W - pad * 2, 1);
-    ctx.fillStyle = 'rgba(169,152,164,0.85)';
+    ctx.fillStyle = P.faint;
     ctx.font = '500 22px ' + SANS;
     ctx.fillText('lumorph.vercel.app', pad, H - 66);
     ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(198,161,103,0.9)';
+    ctx.fillStyle = P.accent;
     ctx.fillText('lookmaxxing, free for everyone', W - pad, H - 66);
     ctx.textAlign = 'left';
 
