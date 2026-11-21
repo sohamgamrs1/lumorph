@@ -951,6 +951,10 @@ a { color: inherit; }
 }
 .age-note.warn { color: var(--danger); }
 
+/* ---------- long names ---------- */
+.greet { overflow-wrap: anywhere; }
+.greet.long { font-size: 0.82em; line-height: 1.06; }
+
 /* ---------- ascend ---------- */
 .bar-track {
   height: 8px;

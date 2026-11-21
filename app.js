@@ -583,7 +583,7 @@
   /* ---------------- router ---------------- */
   let route = 'home';
   let navTimer = null;
-  const TABS = ['home', 'progress', 'profile'];
+  const TABS = ['home', 'progress', 'ascend', 'profile'];
   const ROUTES = {};
 
   let previousRoute = 'home';
@@ -1254,7 +1254,10 @@
         h('div', { class: 'row between' },
           h('div', {},
             h('p', { class: 'eyebrow' }, T('Welcome back')),
-            h('h1', { class: 'display lg', style: { marginTop: '6px' } }, greet + ', ', h('em', {}, txt(S.profile.name, 'you')))),
+            h('h1', {
+              class: 'display lg greet' + ((S.profile.name || '').length > 8 ? ' long' : ''),
+              style: { marginTop: '6px' }
+            }, greet + ', ', h('em', {}, txt(S.profile.name, 'you')))),
           h('div', { class: 'pill gold' }, h('span', { class: 'dot' }), rk.name))),
 
       h('div', { class: 'week mt-20 rise', style: { '--i': 1 } }, days.map((d) =>
@@ -3392,7 +3395,10 @@
       h('div', { class: 'center mt-12 rise', style: { '--i': 0 } },
         h('div', { style: { width: '92px', height: '92px', margin: '0 auto', borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #FFF4D8, var(--gold) 45%, var(--gold-2) 85%)', display: 'grid', placeItems: 'center', fontFamily: 'var(--serif)', fontSize: '34px', color: '#171308' } },
           (S.profile.name || 'L')[0].toUpperCase()),
-        h('h1', { class: 'display md', style: { marginTop: '14px' } }, txt(S.profile.name, 'You')),
+        h('h1', {
+          class: 'display md greet' + ((S.profile.name || '').length > 8 ? ' long' : ''),
+          style: { marginTop: '14px' }
+        }, txt(S.profile.name, 'You')),
         h('div', { class: 'row gap-8', style: { justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' } },
           h('span', { class: 'pill gold' }, 'Free forever'),
           h('span', { class: 'pill plain' }, 'Rank: ' + rk.name),
@@ -3437,15 +3443,22 @@
       h('span', { class: 'chev', html: I.chev, style: { display: 'grid' } }));
   }
   function editName() {
-    const input = h('input', { class: 'input', value: S.profile.name, maxlength: '24' });
+    const input = h('input', { class: 'input', value: S.profile.name, maxlength: String(NAME_MAX) });
+    const err = h('p', { class: 'field-error', style: { marginTop: '10px' } }, '');
+    const showErr = (t) => { err.textContent = t; err.classList.add('on'); };
     openSheet(h('div', {},
       h('h2', { class: 'display sm' }, 'Your name'),
       h('p', { class: 'small mt-8' }, 'Only used to greet you. It never leaves the device.'),
       h('div', { class: 'mt-16' }, input),
+      h('span', { class: 'hint', style: { marginTop: '8px', display: 'block' } }, '2\u2013' + NAME_MAX + ' characters'),
+      err,
       h('div', { class: 'row gap-10 mt-20' },
         h('button', { class: 'btn ghost', onclick: closeSheet }, 'Cancel'),
         h('button', { class: 'btn primary', onclick: () => {
-          S.profile.name = (input.value || 'Friend').trim().slice(0, 24);
+          const n = (input.value || '').trim();
+          if (n.length < 2) return showErr('Use at least 2 characters.');
+          if (n.length > NAME_MAX) return showErr('Keep it to ' + NAME_MAX + ' characters or fewer.');
+          S.profile.name = n;
           save(); closeSheet(); go('profile'); toast('Saved');
         } }, 'Save'))));
   }
